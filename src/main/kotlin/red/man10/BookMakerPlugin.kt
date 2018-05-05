@@ -23,7 +23,7 @@ class BookMakerPlugin: JavaPlugin() {
     val gui = BookMakerGUI().returnGUI(this)
     val gameManager = BookMakerGameManager().returnGameManager(this)
     val listener = BookMakerListener().returnListener(this)
-    val configManager = BookMakerConfigManager().returnConfigManager(this)
+    //val configManager = BookMakerConfigManager().returnConfigManager(this)
     var sidebar: BookMakerSidebar? = null
     var data: BookMakerData? = null // = BookMakerData().returnData(this)
 
@@ -45,10 +45,10 @@ class BookMakerPlugin: JavaPlugin() {
 
         worldguard = WGBukkit.getPlugin()
 
-        configManager.loadConfig(null)
-
         sidebar = BookMakerSidebar().returnSidebar(this)
         data = BookMakerData().returnData(this)
+
+        data!!.reload(Bukkit.getConsoleSender())
     }
 
     override fun onDisable() {
@@ -62,7 +62,7 @@ class BookMakerPlugin: JavaPlugin() {
     override fun onCommand(sender: CommandSender, cmd: Command, label: String, args: Array<String>): Boolean {
         if (sender is Player) {
             if (args.isEmpty()) {
-                if (sender.hasPermission("mp.play")) {
+                if (sender.hasPermission("mb.play")) {
                     if (isLocked == false) {
                         gui.openTopMenu(sender)
                     } else {
@@ -85,7 +85,8 @@ class BookMakerPlugin: JavaPlugin() {
                     when (args[0]) {
                     //OPコマンド
                         "reload" -> {
-                            configManager.loadConfig(sender)
+                            //configManager.loadConfig(sender)
+                            data!!.reload(sender)
                         }
                         "open" -> {
                             if (args.size == 2) {

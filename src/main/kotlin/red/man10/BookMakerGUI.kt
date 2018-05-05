@@ -132,7 +132,7 @@ class BookMakerGUI {
                         var i = 0
                         for (place in fighterPlaces[players.size - 1]) {
                             //createItem(place, playerSelectMenu, Material.STICK, 0, 1, "i", listOf())
-                            var playerName: String = Bukkit.getPlayer(players.toMutableList()[i]).name
+                            var playerName: String = Bukkit.getOfflinePlayer(players.toMutableList()[i]).name
                             var dataLore = listOf(
                                     "§eクリックでベット!",
                                     "§8id: " + (players.toMutableList()[i]),

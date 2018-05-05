@@ -1,10 +1,7 @@
 package red.man10
 
 import org.apache.commons.lang.mutable.Mutable
-import org.bukkit.Bukkit
-import org.bukkit.Location
-import org.bukkit.Material
-import org.bukkit.Sound
+import org.bukkit.*
 import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.entity.Player
 import java.math.BigDecimal
@@ -263,7 +260,7 @@ class BookMakerGameManager {
                             var i = 1
                             for (uuid in pushingGame.candidates.take(pushingGame.playerNumber)) {
                                 pushingGame.players.put(uuid, mutableListOf())
-                                Bukkit.broadcastMessage(pl!!.prefix + "§c§lP" + i + ": §f§l" + Bukkit.getPlayer(uuid).name)
+                                Bukkit.broadcastMessage(pl!!.prefix + "§c§lP" + i + ": §f§l" + Bukkit.getOfflinePlayer(uuid).name)
 
                                 for (otherGame in runningGames.values) {
                                     if (otherGame.candidates.contains(uuid)) {
@@ -310,7 +307,7 @@ class BookMakerGameManager {
                             override fun run() {
                                 cancel()
                             }
-                        }.runTaskTimer(pl!!, 100, 0) //試合前の時間
+                        }.runTaskTimer(pl!!, 120, 0) //試合前の時間
 
                         var timer = 3
                         for (p in Bukkit.getOnlinePlayers()) {
@@ -333,6 +330,7 @@ class BookMakerGameManager {
                             }
                             Bukkit.dispatchCommand(console, ("mkit push " + p.name))
                             resetPlayerStatus(p)
+                            p.gameMode = GameMode.SURVIVAL
                             Bukkit.dispatchCommand(console, ("mkit set " + p.name + " mb_" + gameID))
                             Bukkit.dispatchCommand(console, ("mkit set " + p.name + " mb_" + gameID))
                             pl!!.freezedPlayer.add(fighter.key)
@@ -422,7 +420,7 @@ class BookMakerGameManager {
                         Bukkit.broadcastMessage(pl!!.prefix +
                                 "§6§l" + bettingGame.gameName +
                                 "§f§lで§e§l" + better.name +
-                                "§f§lが§d§l" + Bukkit.getPlayer(fighterUUID).name +
+                                "§f§lが§d§l" + Bukkit.getOfflinePlayer(fighterUUID).name +
                                 "§f§lに§a§l" + price +
                                 "円§f§lベットしました! " +
                                 "§e§l(オッズ: " + getOdds(bettingGame.players, fighterUUID, bettingGame.tax, bettingGame.prize).toString() + "倍)"
@@ -470,24 +468,24 @@ class BookMakerGameManager {
                     Bukkit.broadcastMessage(pl!!.prefix +
                             "§6§l" + endingGame.gameName + " §f§l試合終了!" + "  §e§lオッズ: " + getOdds(endingGame.players, winner, endingGame.tax, endingGame.prize) + "倍")
                     Bukkit.broadcastMessage(pl!!.prefix +
-                            "§c§l勝者: " + Bukkit.getPlayer(winner).name +
+                            "§c§l勝者: " + Bukkit.getOfflinePlayer(winner).name +
                             " §a§l賞金: " + prize.toInt() + "円")
                     Bukkit.broadcastMessage(pl!!.prefix + "§f§l記録: §e§l" + endingGame.gameTimer.roundTo2DecimalPlaces() + "秒")
                     endingGame.gameTimer = -1.0
                     pl!!.vault!!.deposit(winner, prize)
                     val console = Bukkit.getServer().consoleSender
                     for (fighter in endingGame.players.keys) {
-                        val command = "mkit pop " + Bukkit.getPlayer(fighter).name
+                        val command = "mkit pop " + Bukkit.getOfflinePlayer(fighter).name
                         Bukkit.dispatchCommand(console, command)
                         var p = Bukkit.getPlayer(fighter)
                         p.performCommand("spawn")
                     }
                 }
                 for (bet in winnerBetters!!) {
-                    if (Bukkit.getPlayer(bet.playerUUID) != null) {
+                    if (Bukkit.getOfflinePlayer(bet.playerUUID) != null) {
                         var givingPrice = (bet.price * odds).toInt()
                         Bukkit.broadcastMessage(pl!!.prefix +
-                                "§b" + Bukkit.getPlayer(bet.playerUUID).name +
+                                "§b" + Bukkit.getOfflinePlayer(bet.playerUUID).name +
                                 "§fが正解にベットし、§e" + givingPrice.toString() + "円§f獲得しました。")
                     } else {
                     }
@@ -544,7 +542,7 @@ class BookMakerGameManager {
             else -> {
                 for (fighter in game.players) {
                     for (bet in fighter.value) {
-                        if (Bukkit.getPlayer(bet.playerUUID) != null) {
+                        if (Bukkit.getOfflinePlayer(bet.playerUUID) != null) {
                             pl!!.vault!!.deposit(bet.playerUUID, bet.price)
                             Bukkit.getPlayer(bet.playerUUID).sendMessage(pl!!.prefix + "§lベット金額が返金されました。")
                         }
