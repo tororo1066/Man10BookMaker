@@ -27,7 +27,7 @@ class BookMakerPlugin: JavaPlugin() {
     var sidebar: BookMakerSidebar? = null
     var data: BookMakerData? = null // = BookMakerData().returnData(this)
 
-    var isLocked = false
+    var isLocked = true
 
     var vault: VaultManager? = null
 
@@ -52,6 +52,7 @@ class BookMakerPlugin: JavaPlugin() {
     }
 
     override fun onDisable() {
+        sidebar!!.removeAll()
         for (gameID in gameManager.runningGames.keys) {
             gameManager.stopGame(gameID)
         }
@@ -66,7 +67,7 @@ class BookMakerPlugin: JavaPlugin() {
                     if (isLocked == false) {
                         gui.openTopMenu(sender)
                     } else {
-                        sender.sendMessage(prefix + "ブックメーカーは現在ロックされています。")
+                        sender.sendMessage(prefix + "ブックメーカーは現在OFFになっています。")
                     }
                 } else {
                     sender.sendMessage("権限がありません。")
@@ -75,24 +76,49 @@ class BookMakerPlugin: JavaPlugin() {
                 if (args[0] == "view") {
                     if (gameManager.runningGames[args[1]] == null) {
                         sender.sendMessage(prefix + "ゲームが存在しません。")
-                        return false
+                        return true
                     } else {
                         gameManager.viewTeleport(args[1], sender)
                         return true
                     }
+                }
+                if (args[0] == "return") {
+                    if (sender.world.name == "bookmaker") {
+                        if (sender.hasPermission("mb.view")) {
+                            sender.performCommand("spawn")
+                            return true
+                        } else {
+                            sender.sendMessage(prefix + "権限がありません。")
+                            return true
+                        }
+                    } else {
+                        sender.sendMessage(prefix + "あなたは観戦していません。")
+                        return true
+                    }
+                }
+
+                if (args[0] == "open" ){
+                    if (isLocked == false) {
+                        if (args.size == 2) {
+                            gameManager.openNewGame(args[1], sender)
+                            return true
+                        } else {
+                            sender.sendMessage(prefix + "コマンドの使用方法が間違っています。/mb help")
+                            return true
+                        }
+                    } else {
+                        sender.sendMessage(prefix + "ブックメーカーは現在OFFになっています。")
+                    }
+                }
+                if (args[0] == "help") {
+                    showHelp(sender)
+                    return true
                 }
                 if (sender.hasPermission("mb.op")) {
                     when (args[0]) {
                     //OPコマンド
                         "reload" -> {
                             configManager.loadConfig(sender)
-                        }
-                        "open" -> {
-                            if (args.size == 2) {
-                                gameManager.openNewGame(args[1], sender)
-                            } else {
-                                sender.sendMessage(prefix + "コマンドの使用方法が間違っています。/mb help")
-                            }
                         }
                         "list" -> {
                             sender.sendMessage(prefix + "§6現在" + gameManager.loadedGames.size + "個のゲームがロードされています。")
@@ -121,10 +147,6 @@ class BookMakerPlugin: JavaPlugin() {
                             } else {
                                 sender.sendMessage(prefix + "コマンドの使用方法が間違っています。/mb help")
                             }
-                        }
-                        "help" -> {
-                            showHelp(sender)
-                            data!!.test()
                         }
                         "push" -> {
                             if (args.size == 2) {
@@ -185,13 +207,13 @@ class BookMakerPlugin: JavaPlugin() {
                                 }
                             }
                         }
-                        "lock" -> {
+                        "off" -> {
                             isLocked = true
-                            sender.sendMessage(prefix + "ロックしました。")
+                            sender.sendMessage(prefix + "OFFにしました。")
                         }
-                        "unlock" -> {
+                        "on" -> {
                             isLocked = false
-                            sender.sendMessage(prefix + "アンロックしました。")
+                            sender.sendMessage(prefix + "ONにしました。")
                         }
 
                         "ask" -> {
@@ -227,14 +249,15 @@ class BookMakerPlugin: JavaPlugin() {
         sender.sendMessage("§a/mb info <ゲームid> §7指定したゲームの情報を表示する")
         sender.sendMessage(" ")
         sender.sendMessage("§6《ゲーム管理系》")
-        sender.sendMessage("§a/mb open <ゲームid> §7指定したゲームを開く")
+        sender.sendMessage("§a/mb open <ゲームid> §7指定したゲームを開く (一般人使用可能)")
         sender.sendMessage("§a/mb ask <新ゲームid> <質問> <選択肢1> <選択肢2> §7ASKモードの試合をオープンする。")
         sender.sendMessage("§a/mb forcestop <ゲームid> §7指定したゲームを強制終了する")
         sender.sendMessage("§a/mb push <ゲームid> §7指定したゲームを次のフェーズに進ませる")
         sender.sendMessage("§a/mb end <ゲームid> <勝者> §7試合中のゲームを終了させる")
-        sender.sendMessage("§a/mb lock §7ブックメーカーをロックする。")
-        sender.sendMessage("§a/mb unlock §7ブックメーカーをアンロックする。")
+        sender.sendMessage("§a/mb off §7ブックメーカーをロックする。")
+        sender.sendMessage("§a/mb on §7ブックメーカーをアンロックする。")
         sender.sendMessage("§a/mb view <ゲームid> §7観戦場所にtpする (一般人使用可能)")
+        sender.sendMessage("§a/mb view <ゲームid> §7ブックメーカーロビーにtpする (一般人使用可能)")
         sender.sendMessage("")
         sender.sendMessage("§6《ポイント管理系》")
         sender.sendMessage("§a/mb setfighterspawn <ゲームid> §7立っているところを選手のスポーンポイントにする")

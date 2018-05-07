@@ -160,7 +160,11 @@ class BookMakerGUI {
                 } else {
                     p.sendMessage(pl!!.prefix + "§4§lERROR: §f§l問題が発生しました。エラーコード001")
                 }
+            } else {
+                p.sendMessage(BookMakerGameManager.pl!!.prefix + "§l今はベットフェーズではありません。")
             }
+        } else {
+            p.sendMessage(BookMakerGameManager.pl!!.prefix + "§lゲームが存在しません。")
         }
     }
 
@@ -199,6 +203,15 @@ class BookMakerGUI {
                 createItem(48, betMenu, Material.TNT, 0, 1, "§4§lリセット", listOf())
                 createItem(41, betMenu, Material.EMERALD_BLOCK, 0, 1, "§a§l決定", listOf("§8id: " + gameId, "§8p: " + bettedUUID.toString()))
                 createItem(43, betMenu, Material.REDSTONE_BLOCK, 0, 1, "§4§lキャンセル", listOf())
+
+                val man = ItemStack(Material.DIAMOND_HOE, 1, 555.toShort())
+                val manMeta = man.itemMeta
+                manMeta.displayName = "§r§l万円"
+                manMeta.lore = listOf()
+                manMeta.isUnbreakable = true
+                manMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
+                man.itemMeta = manMeta
+                betMenu.setItem(8, man)
                 p.openInventory(betMenu)
             } else {
                 p.sendMessage("§4§lERROR: §f§l試合がすでに始まっています")
@@ -212,7 +225,7 @@ class BookMakerGUI {
         for (char in numberString!!) {
             oppositeNumberString = char + oppositeNumberString
         }
-        var i = 8
+        var i = 7
         for (char in oppositeNumberString) {
             p.openInventory.topInventory.setItem(i, numberStacks[char.toString().toInt()]) //toString挟まないとおかしくなる
             i--

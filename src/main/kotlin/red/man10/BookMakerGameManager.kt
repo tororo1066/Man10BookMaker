@@ -67,100 +67,103 @@ class BookMakerGameManager {
         pl!!.listener.hasBMWorld = (Bukkit.getWorld("bookmaker") != null)
 
         for (gameKey in keys) {
-            //gameに不備がないか確認
-            //FLAG
-            if (config.getKeys(true).containsAll(listOf(gameKey + ".name", gameKey + ".playerNumber", gameKey + ".item", gameKey + ".joinFee", gameKey + ".tax", gameKey + ".prize"))) {
+            if (gameKey != "mysql") {
+                //gameに不備がないか確認
+                //FLAG
+                if (config.getKeys(true).containsAll(listOf(gameKey + ".name", gameKey + ".playerNumber", gameKey + ".item", gameKey + ".joinFee", gameKey + ".tax", gameKey + ".prize"))) {
 
-                //itemが存在するアイテムかの確認
-                var gameItem: Material = Material.STONE
-                try {
-                    gameItem = Material.valueOf(config.getString(gameKey + ".item"))
-                } catch (e: Exception) {
-                    //コンソール・プレイヤー分岐
-                    if (p == null) {
-                        print(pl!!.prefix + "§e§lWARNING: §r§fゲーム「" + gameKey + "」のitemが存在しないアイテムです。")
+                    //itemが存在するアイテムかの確認
+                    var gameItem: Material = Material.STONE
+                    try {
+                        gameItem = Material.valueOf(config.getString(gameKey + ".item"))
+                    } catch (e: Exception) {
+                        //コンソール・プレイヤー分岐
+                        if (p == null) {
+                            print(pl!!.prefix + "§e§lWARNING: §r§fゲーム「" + gameKey + "」のitemが存在しないアイテムです。")
+                        } else {
+                            p.sendMessage(pl!!.prefix + "§e§lWARNING: §r§fゲーム「" + gameKey + "」のitemが存在しないアイテムです。")
+                        }
+                    }
+
+                    var startLocation: Location? = null
+                    if (config.getKeys(true).containsAll(listOf(gameKey + ".x", gameKey + ".y", gameKey + ".x"))) {
+                        if (pl!!.listener.hasBMWorld) {
+                            startLocation = Location(
+                                    Bukkit.getWorld("bookmaker"),
+                                    config.getDouble(gameKey + ".x"),
+                                    config.getDouble(gameKey + ".y"),
+                                    config.getDouble(gameKey + ".z"))
+                        }
                     } else {
-                        p.sendMessage(pl!!.prefix + "§e§lWARNING: §r§fゲーム「" + gameKey + "」のitemが存在しないアイテムです。")
                     }
-                }
 
-                var startLocation: Location? = null
-                if (config.getKeys(true).containsAll(listOf(gameKey + ".x", gameKey + ".y", gameKey + ".x"))) {
-                    if (pl!!.listener.hasBMWorld) {
-                        startLocation = Location(
-                                Bukkit.getWorld("bookmaker"),
-                                config.getDouble(gameKey + ".x"),
-                                config.getDouble(gameKey + ".y"),
-                                config.getDouble(gameKey + ".z"))
+                    var durationList = mutableListOf<Int>()
+                    if (config.getKeys(true).containsAll(listOf(gameKey + ".time1", gameKey + ".time2", gameKey + ".time3"))) {
+                        durationList.add(config.getInt(gameKey + ".time1"))
+                        durationList.add(config.getInt(gameKey + ".time2"))
+                        durationList.add(config.getInt(gameKey + ".time3"))
+                    } else {
+                        durationList = mutableListOf(120, 120, 120)
+                    }
+
+
+                    var viewLocation: Location? = null
+                    if (config.getKeys(true).containsAll(listOf(gameKey + ".vx", gameKey + ".vy", gameKey + ".vx"))) {
+                        if (pl!!.listener.hasBMWorld) {
+                            viewLocation = Location(
+                                    Bukkit.getWorld("bookmaker"),
+                                    config.getDouble(gameKey + ".vx"),
+                                    config.getDouble(gameKey + ".vy"),
+                                    config.getDouble(gameKey + ".vz"))
+                        }
+                    } else {
+                    }
+
+                    //仮配列にゲームを追加
+                    if (loadedGames[gameKey] == null) {
+                        //新しいゲーム
+                        newGames.put(
+                                gameKey,
+                                //FLAG
+                                Game(
+                                        config.getString(gameKey + ".name"),
+                                        gameItem,
+                                        config.getInt(gameKey + ".playerNumber"),
+                                        config.getInt(gameKey + ".joinFee").toDouble(),
+                                        config.getDouble(gameKey + ".tax"),
+                                        config.getDouble(gameKey + ".prize"),
+                                        startLocation,
+                                        viewLocation,
+                                        durationList,
+                                        GameStatus.OFF,
+                                        mutableMapOf(),
+                                        mutableListOf(),
+                                        0.0
+                                )
+                        )
+                    } else {
+                        //元々あったゲームの改変
+                        //FLAG
+                        var changingGame = loadedGames[gameKey]!!
+                        changingGame.gameName = config.getString(gameKey + ".name")
+                        changingGame.item = gameItem
+                        changingGame.playerNumber = config.getInt(gameKey + ".playerNumber")
+                        changingGame.joinFee = config.getInt(gameKey + ".joinFee").toDouble()
+                        changingGame.tax = config.getDouble(gameKey + ".tax")
+                        changingGame.prize = config.getDouble(gameKey + ".prize")
+                        changingGame.startingLocation = startLocation
+                        changingGame.viewingLocation = viewLocation
+                        changingGame.duration = durationList
+                        newGames.put(gameKey, changingGame)
+                        print(changingGame)
                     }
                 } else {
-                }
-
-                var durationList = mutableListOf<Int>()
-                if (config.getKeys(true).containsAll(listOf(gameKey + ".time1", gameKey + ".time2", gameKey + ".time3"))) {
-                    durationList.add(config.getInt(gameKey + ".time1"))
-                    durationList.add(config.getInt(gameKey + ".time2"))
-                    durationList.add(config.getInt(gameKey + ".time3"))
-                } else {
-                    durationList = mutableListOf(120, 120, 120)
-                }
-
-
-                var viewLocation: Location? = null
-                if (config.getKeys(true).containsAll(listOf(gameKey + ".vx", gameKey + ".vy", gameKey + ".vx"))) {
-                    if (pl!!.listener.hasBMWorld) {
-                        viewLocation = Location(
-                                Bukkit.getWorld("bookmaker"),
-                                config.getDouble(gameKey + ".vx"),
-                                config.getDouble(gameKey + ".vy"),
-                                config.getDouble(gameKey + ".vz"))
+                    //configに不備がある
+                    if (p == null) {
+                        print(pl!!.prefix + "§4§lERROR: §f§lゲーム「" + gameKey + "」のconfigに不備があります。")
+                    } else {
+                        p.sendMessage(pl!!.prefix + "§4§lERROR: §f§lゲーム「" + gameKey + "」のconfigに不備があります。")
                     }
-                } else {
-                }
-
-                //仮配列にゲームを追加
-                if (loadedGames[gameKey] == null) {
-                    //新しいゲーム
-                    newGames.put(
-                            gameKey,
-                            //FLAG
-                            Game(
-                                    config.getString(gameKey + ".name"),
-                                    gameItem,
-                                    config.getInt(gameKey + ".playerNumber"),
-                                    config.getInt(gameKey + ".joinFee").toDouble(),
-                                    config.getDouble(gameKey + ".tax"),
-                                    config.getDouble(gameKey + ".prize"),
-                                    startLocation,
-                                    viewLocation,
-                                    durationList,
-                                    GameStatus.OFF,
-                                    mutableMapOf(),
-                                    mutableListOf(),
-                                    0.0
-                            )
-                    )
-                } else {
-                    //元々あったゲームの改変
-                    //FLAG
-                    var changingGame = loadedGames[gameKey]!!
-                    changingGame.gameName = config.getString(gameKey + ".name")
-                    changingGame.item = gameItem
-                    changingGame.playerNumber = config.getInt(gameKey + ".playerNumber")
-                    changingGame.joinFee = config.getInt(gameKey + ".joinFee").toDouble()
-                    changingGame.tax = config.getDouble(gameKey + ".tax")
-                    changingGame.prize = config.getDouble(gameKey + ".prize")
-                    changingGame.startingLocation = startLocation
-                    changingGame.viewingLocation = viewLocation
-                    changingGame.duration = durationList
-                    newGames.put(gameKey, changingGame)
-                }
-            } else {
-                //configに不備がある
-                if (p == null) {
-                    print(pl!!.prefix + "§4§lERROR: §f§lゲーム「" + gameKey + "」のconfigに不備があります。")
-                } else {
-                    p.sendMessage(pl!!.prefix + "§4§lERROR: §f§lゲーム「" + gameKey + "」のconfigに不備があります。")
                 }
             }
         }
@@ -173,37 +176,56 @@ class BookMakerGameManager {
     }
 
     fun openNewGame(id: String, p: Player) {
-        var openingGame: Game? = loadedGames[id]
-        if (openingGame == null) {
-            p.sendMessage(pl!!.prefix + "§4§lERROR: §f§l指定されたゲームは存在しません。")
-        } else {
-            if (runningGames.keys.contains(id)) {
-                p.sendMessage(pl!!.prefix + "§4§lERROR: §f§l指定されたゲームはすでに開いています。")
+        if (p.hasPermission("mb.open")) {
+            var openingGame: Game? = loadedGames[id]
+            if (openingGame == null) {
+                p.sendMessage(pl!!.prefix + "§4§lERROR: §f§l指定されたゲームは存在しません。")
             } else {
-                openingGame!!.candidates = mutableListOf()
-                openingGame!!.players = mutableMapOf()
-                openingGame.status = GameStatus.JOIN
-                runningGames.put(id, openingGame)
-                p.sendMessage(pl!!.prefix + "ゲーム「" + id + "」を開きました")
-                Bukkit.broadcastMessage(pl!!.prefix + "§6§l" + openingGame.gameName + "§f§lがオープンしました。")
-                Bukkit.broadcastMessage(pl!!.prefix + "§6§l/mb§f§lで参加しよう！")
-                var timer = openingGame.duration[0]
-                object : BukkitRunnable() {
-                    override fun run() {
-                        timer--
-                        if (timer == 0) {
-                            if (openingGame.status == GameStatus.JOIN) {
-                                if (openingGame.candidates.size >= openingGame.playerNumber) {
-                                    pushPhase(id, p)
+                if (runningGames.keys.contains(id)) {
+                    p.sendMessage(pl!!.prefix + "§4§lERROR: §f§l指定されたゲームはすでに開いています。")
+                } else {
+                    openingGame!!.candidates = mutableListOf()
+                    openingGame!!.players = mutableMapOf()
+                    openingGame.status = GameStatus.JOIN
+                    runningGames.put(id, openingGame)
+                    p.sendMessage(pl!!.prefix + "ゲーム「" + id + "」を開きました")
+                    Bukkit.broadcastMessage(pl!!.prefix + "§6§l" + openingGame.gameName + "§f§lがオープンしました。")
+                    Bukkit.broadcastMessage(pl!!.prefix + "§6§l/mb§f§lで参加しよう！")
+                    pl!!.sidebar!!.showCandidates(openingGame, id)
+                    var timer = openingGame.duration[0]
+                    object : BukkitRunnable() {
+                        override fun run() {
+                            timer--
+                            if (timer == 0) {
+                                if (openingGame.status == GameStatus.JOIN) {
+                                    if (openingGame.candidates.size >= openingGame.playerNumber) {
+                                        pushPhase(id, p)
+                                    } else {
+                                        Bukkit.broadcastMessage(pl!!.prefix + "§l時間切れで§a§l" + openingGame.gameName + "§f§lが終了されました。")
+                                        stopGame(id)
+                                    }
+                                }
+                                cancel()
+                            } else {
+                                if (openingGame.status == GameStatus.JOIN) {
+                                    when (timer) {
+                                        100 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + openingGame.gameName + " §f参加応募終了まで: 100秒")
+                                        60 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + openingGame.gameName + " §f参加応募終了まで: 60秒")
+                                        45 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + openingGame.gameName + " §f参加応募終了まで: 45秒")
+                                        30 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + openingGame.gameName + " §f参加応募終了まで: 30秒")
+                                        15 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + openingGame.gameName + " §f参加応募終了まで: 15秒")
+                                        10 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + openingGame.gameName + " §f参加応募終了まで: 10秒")
+                                        5 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + openingGame.gameName + " §f参加応募終了まで: 5秒")
+                                        3 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + openingGame.gameName + " §f参加応募終了まで: 3秒")
+                                        2 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + openingGame.gameName + " §f参加応募終了まで: 2秒")
+                                        1 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + openingGame.gameName + " §f参加応募終了まで: 1秒")
+                                    }
                                 } else {
-                                    Bukkit.broadcastMessage(pl!!.prefix + "§l時間切れで§a§l" + openingGame.gameName + "§f§lが終了されました。")
-                                    stopGame(id)
+                                    cancel()
                                 }
                             }
-                            cancel()
                         }
-                    }
-                }.runTaskTimer(pl!!, 0, 20)//タイム計測
+                    }.runTaskTimer(pl!!, 0, 20)//タイム計測
 //                var timer = openingGame.duration[0]
 //                object : BukkitRunnable() {
 //                    override fun run() {
@@ -215,38 +237,46 @@ class BookMakerGameManager {
 //                        }
 //                    }
 //                }.runTaskTimer(pl!!, 0, 20)
+                }
             }
         }
     }
 
     fun addCandidate(p: Player, gameID: String){
-        if (runningGames[gameID] == null) {
-            p.sendMessage(pl!!.prefix + "§4§lERROR: §f§lゲームが存在しません。")
-        } else {
-            if (runningGames[gameID]!!.status == GameStatus.JOIN) {
-                if (runningGames[gameID]!!.candidates.contains(p.uniqueId)) {
-                    p.sendMessage(pl!!.prefix + "§4§lERROR: §f§lあなたはすでにこのゲームに参加しています！")
-                } else {
-                    if (pl!!.vault!!.getBalance(p.uniqueId) < runningGames[gameID]!!.joinFee) {
-                        p.sendMessage(pl!!.prefix + "§4§lERROR: §f§l参加費が足りません！")
+        if (p.hasPermission("mb.join")) {
+            if (runningGames[gameID] == null) {
+                p.sendMessage(pl!!.prefix + "§4§lERROR: §f§lゲームが存在しません。")
+            } else {
+                if (runningGames[gameID]!!.status == GameStatus.JOIN) {
+                    if (runningGames[gameID]!!.candidates.contains(p.uniqueId)) {
+                        p.sendMessage(pl!!.prefix + "§4§lERROR: §f§lあなたはすでにこのゲームに参加しています！")
                     } else {
-                        var isFighter = false
-                        for (game in runningGames.values) {
-                            if (game.players.keys.contains(p.uniqueId)) {
-                                isFighter = true
+                        if (pl!!.vault!!.getBalance(p.uniqueId) < runningGames[gameID]!!.joinFee) {
+                            p.sendMessage(pl!!.prefix + "§4§lERROR: §f§l参加費が足りません！")
+                        } else {
+                            var isFighter = false
+                            for (game in runningGames.values) {
+                                if (game.players.keys.contains(p.uniqueId)) {
+                                    isFighter = true
+                                }
+                            }
+                            if (!isFighter) {
+                                runningGames[gameID]!!.candidates.add(p.uniqueId)
+                                p.sendMessage(pl!!.prefix + "§6§l" + runningGames[gameID]!!.gameName + "に参加登録されました。")
+                                p.sendMessage(pl!!.prefix + "§l抽選で選ばれると試合に参加できます")
+                                pl!!.vault!!.withdraw(p.uniqueId, runningGames[gameID]!!.joinFee)
+                                pl!!.sidebar!!.showCandidates(runningGames[gameID]!!, gameID)
+                            } else {
+                                p.sendMessage(pl!!.prefix + "§4§lERROR: §f§lあなたは別のゲームで選手なので、参加できません。")
                             }
                         }
-                        if (!isFighter) {
-                            runningGames[gameID]!!.candidates.add(p.uniqueId)
-                            p.sendMessage(pl!!.prefix + "§6§l" + runningGames[gameID]!!.gameName + "に参加登録されました。")
-                            p.sendMessage(pl!!.prefix + "§l抽選で選ばれると試合に参加できます")
-                            pl!!.vault!!.withdraw(p.uniqueId, runningGames[gameID]!!.joinFee)
-                        } else {
-                            p.sendMessage(pl!!.prefix + "§4§lERROR: §f§lあなたは別のゲームで選手なので、参加できません。")
-                        }
                     }
+                } else {
+                    p.sendMessage(pl!!.prefix + "§l今は参加フェーズではありません。")
                 }
             }
+        } else {
+            p.sendMessage(pl!!.prefix + "§l権限がありません。")
         }
     }
 
@@ -263,7 +293,11 @@ class BookMakerGameManager {
                             var i = 1
                             for (uuid in pushingGame.candidates.take(pushingGame.playerNumber)) {
                                 pushingGame.players.put(uuid, mutableListOf())
-                                Bukkit.broadcastMessage(pl!!.prefix + "§c§lP" + i + ": §f§l" + Bukkit.getPlayer(uuid).name)
+                                if (pl!!.data!!.getBestRecord(gameID, uuid) != null) {
+                                    Bukkit.broadcastMessage(pl!!.prefix + "§c§lP" + i + ": §f§l" + Bukkit.getPlayer(uuid).name + " §e§l最高記録: " + pl!!.data!!.getBestRecord(gameID, uuid) + "秒")
+                                } else {
+                                    Bukkit.broadcastMessage(pl!!.prefix + "§c§lP" + i + ": §f§l" + Bukkit.getPlayer(uuid).name + " §e§l記録無し")
+                                }
 
                                 for (otherGame in runningGames.values) {
                                     if (otherGame.candidates.contains(uuid)) {
@@ -289,6 +323,23 @@ class BookMakerGameManager {
                                             pushPhase(gameID, p)
                                         }
                                         cancel()
+                                    } else {
+                                        if (pushingGame.status == GameStatus.BET) {
+                                            when (timer) {
+                                                100 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + pushingGame.gameName + " §fベット終了まで: 100秒")
+                                                60 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + pushingGame.gameName + " §fベット終了まで: 60秒")
+                                                45 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + pushingGame.gameName + " §fベット終了まで: 45秒")
+                                                30 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + pushingGame.gameName + " §fベット終了まで: 30秒")
+                                                15 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + pushingGame.gameName + " §fベット終了まで: 15秒")
+                                                10 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + pushingGame.gameName + " §fベット終了まで: 10秒")
+                                                5 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + pushingGame.gameName + " §fベット終了まで: 5秒")
+                                                3 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + pushingGame.gameName + " §fベット終了まで: 3秒")
+                                                2 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + pushingGame.gameName + " §fベット終了まで: 2秒")
+                                                1 -> Bukkit.broadcastMessage(pl!!.prefix + "§a" + pushingGame.gameName + " §fベット終了まで: 1秒")
+                                            }
+                                        } else {
+                                            cancel()
+                                        }
                                     }
                                 }
                             }.runTaskTimer(pl!!, 0, 20)//タイム計測
@@ -302,50 +353,46 @@ class BookMakerGameManager {
 
                 GameStatus.BET -> {//試合に進む
                     if (UUIDMap.keys.contains(pushingGame.players.keys.toList()[0]) == false) {
-                        pl!!.sidebar!!.removeAll()
                         pushingGame.status = GameStatus.FIGHT
                         Bukkit.broadcastMessage(pl!!.prefix + "§6§l" + pushingGame.gameName + " §f§lベット終了!")
                         Bukkit.broadcastMessage(pl!!.prefix + "§e§lまもなく試合が始まります...")
-                        object : BukkitRunnable() {
-                            override fun run() {
-                                cancel()
-                            }
-                        }.runTaskTimer(pl!!, 100, 0) //試合前の時間
 
-                        var timer = 3
-                        for (p in Bukkit.getOnlinePlayers()) {
-                            p.playSound(p.location, Sound.ENTITY_WITHER_SPAWN, 1.toFloat(), 1.toFloat())
-                        }
-
-                        var i = 1
-                        //ファイター処理
-                        for (fighter in pushingGame.players) {
-                            var p = Bukkit.getPlayer(fighter.key)
-                            Bukkit.broadcastMessage(pl!!.prefix +
-                                    "§c§lP" + i.toString() + ": §f§l" +
-                                    p.name +
-                                    " §r§e(オッズ: " + getOdds(pushingGame.players, fighter.key, pushingGame.tax, pushingGame.prize).toString() + "倍)")
-                            if (pushingGame.startingLocation != null) {
-                                var location = pushingGame.startingLocation!!
-                                var tpLocation = Location(location.world, location.x, location.y, location.z)
-                                tpLocation.add(xDifferenences[i - 1]!!.toDouble(), 0.0, zDifferenences[i - 1]!!.toDouble())
-                                p.teleport(tpLocation)
-                            }
-                            Bukkit.dispatchCommand(console, ("mkit push " + p.name))
-                            resetPlayerStatus(p)
-                            Bukkit.dispatchCommand(console, ("mkit set " + p.name + " mb_" + gameID))
-                            Bukkit.dispatchCommand(console, ("mkit set " + p.name + " mb_" + gameID))
-                            pl!!.freezedPlayer.add(fighter.key)
-                            i++
-                        }
+                        var timer = 8
 
                         Bukkit.dispatchCommand(console, "minecraft:tellraw @a {\"text\":\"§2§l<<< §e§lクリックで観戦場所にテレポート§2§l >>>\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"/mb view " + gameID + "\"}}")
+                        pl!!.sidebar!!.showWhileFight(pushingGame)
 
                         object : BukkitRunnable() {
                             override fun run() {
 
                                 when (timer) {
                                     3 -> {
+                                        for (p in Bukkit.getOnlinePlayers()) {
+                                            p.playSound(p.location, Sound.ENTITY_WITHER_SPAWN, 1.toFloat(), 1.toFloat())
+                                        }
+
+                                        var i = 1
+                                        //ファイター処理
+                                        for (fighter in pushingGame.players) {
+                                            var p = Bukkit.getPlayer(fighter.key)
+                                            Bukkit.broadcastMessage(pl!!.prefix +
+                                                    "§c§lP" + i.toString() + ": §f§l" +
+                                                    p.name +
+                                                    " §r§e(オッズ: " + getOdds(pushingGame.players, fighter.key, pushingGame.tax, pushingGame.prize).roundTo2DecimalPlaces().toString() + "倍)")
+                                            if (pushingGame.startingLocation != null) {
+                                                var location = pushingGame.startingLocation!!
+                                                var tpLocation = Location(location.world, location.x, location.y, location.z)
+                                                tpLocation.add(xDifferenences[i - 1]!!.toDouble(), 0.0, zDifferenences[i - 1]!!.toDouble())
+                                                p.teleport(tpLocation)
+                                            }
+                                            Bukkit.dispatchCommand(console, ("mkit push " + p.name))
+                                            resetPlayerStatus(p)
+                                            Bukkit.dispatchCommand(console, ("mkit set " + p.name + " mb_" + gameID))
+                                            Bukkit.dispatchCommand(console, ("mkit set " + p.name + " mb_" + gameID))
+                                            pl!!.freezedPlayer.add(fighter.key)
+                                            i++
+                                        }
+
                                         Bukkit.broadcastMessage(pl!!.prefix + "§aスタートまで: §e§l3秒")
                                     }
                                     2 -> {
@@ -366,13 +413,11 @@ class BookMakerGameManager {
                                 }
                                 timer--
                             }
-                        }.runTaskTimer(pl!!, 40, 20)//カウントダウン
+                        }.runTaskTimer(pl!!, 0, 20)//カウントダウン
 
                         pushingGame.gameTimer = 0.0
                         object : BukkitRunnable() {
                             override fun run() {
-                                print(pushingGame.gameTimer)
-                                print(pushingGame.duration[2])
                                 if (pushingGame.gameTimer == -1.0) {
                                     cancel()
                                     return
@@ -386,7 +431,8 @@ class BookMakerGameManager {
                                     pushingGame.gameTimer += 0.05
                                 }
                             }
-                        }.runTaskTimer(pl!!, 60, 1)//タイム計測
+                        }.runTaskTimer(pl!!, 180, 1)//タイム計測
+
 
                     } else {
                         p.sendMessage(pl!!.prefix + "§4§lERROR: §f§lこのゲームはask形式です。")
@@ -423,9 +469,9 @@ class BookMakerGameManager {
                                 "§6§l" + bettingGame.gameName +
                                 "§f§lで§e§l" + better.name +
                                 "§f§lが§d§l" + Bukkit.getPlayer(fighterUUID).name +
-                                "§f§lに§a§l" + price +
-                                "円§f§lベットしました! " +
-                                "§e§l(オッズ: " + getOdds(bettingGame.players, fighterUUID, bettingGame.tax, bettingGame.prize).toString() + "倍)"
+                                "§f§lに§a§l" + (price / 10000) +
+                                "万円§f§lベットしました! " +
+                                "§e§l(オッズ: " + getOdds(bettingGame.players, fighterUUID, bettingGame.tax, bettingGame.prize).roundTo2DecimalPlaces().toString() + "倍)"
                         )
                         pl!!.sidebar!!.showOdds(bettingGame)
                     } else {
@@ -440,9 +486,9 @@ class BookMakerGameManager {
                                 "§6§l" + bettingGame.gameName +
                                 "§f§lで§e§l" + better.name +
                                 "§f§lが§d§l" + UUIDMap[fighterUUID] +
-                                "§f§lに§a§l" + price +
-                                "円§f§lベットしました! " +
-                                "§e§l(オッズ: " + getOdds(bettingGame.players, fighterUUID, bettingGame.tax, bettingGame.prize).toString() + "倍)"
+                                "§f§lに§a§l" + (price / 10000) +
+                                "万円§f§lベットしました! " +
+                                "§e§l(オッズ: " + getOdds(bettingGame.players, fighterUUID, bettingGame.tax, bettingGame.prize).roundTo2DecimalPlaces().toString() + "倍)"
                         )
                     } else {
                         better.sendMessage(pl!!.prefix + "§4§lERROR: §f§l今はベットできません。")
@@ -463,16 +509,17 @@ class BookMakerGameManager {
                 var prize = getTotalPrice(endingGame.players) * endingGame.prize
                 if (UUIDMap.keys.contains(endingGame.players.keys.toList()[0])) {
                     Bukkit.broadcastMessage(pl!!.prefix +
-                            "§6§l" + endingGame.gameName + " §f§l結果発表!" + "  §e§lオッズ: " + getOdds(endingGame.players, winner, endingGame.tax, endingGame.prize) + "倍")
+                            "§6§l" + endingGame.gameName + " §f§l結果発表!" + "  §e§lオッズ: " + getOdds(endingGame.players, winner, endingGame.tax, endingGame.prize).roundTo2DecimalPlaces() + "倍")
                     Bukkit.broadcastMessage(pl!!.prefix +
                             "§c§l正解: " + UUIDMap[winner])
                 } else {
                     Bukkit.broadcastMessage(pl!!.prefix +
-                            "§6§l" + endingGame.gameName + " §f§l試合終了!" + "  §e§lオッズ: " + getOdds(endingGame.players, winner, endingGame.tax, endingGame.prize) + "倍")
+                            "§6§l" + endingGame.gameName + " §f§l試合終了!" + "  §e§lオッズ: " + getOdds(endingGame.players, winner, endingGame.tax, endingGame.prize).roundTo2DecimalPlaces() + "倍")
                     Bukkit.broadcastMessage(pl!!.prefix +
                             "§c§l勝者: " + Bukkit.getPlayer(winner).name +
                             " §a§l賞金: " + prize.toInt() + "円")
                     Bukkit.broadcastMessage(pl!!.prefix + "§f§l記録: §e§l" + endingGame.gameTimer.roundTo2DecimalPlaces() + "秒")
+                    pl!!.data!!.saveFight(gameID, endingGame, winner) //SQL
                     endingGame.gameTimer = -1.0
                     pl!!.vault!!.deposit(winner, prize)
                     val console = Bukkit.getServer().consoleSender
@@ -482,16 +529,19 @@ class BookMakerGameManager {
                         var p = Bukkit.getPlayer(fighter)
                         p.performCommand("spawn")
                     }
+                    Bukkit.dispatchCommand(console, "minecraft:tellraw @a {\"text\":\"§2§l<<< §e§lクリックでブックメーカーロビーに戻る§2§l >>>\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"/mb return " + gameID + "\"}}")
+                    pl!!.sidebar!!.removeAll()
                 }
                 for (bet in winnerBetters!!) {
                     if (Bukkit.getPlayer(bet.playerUUID) != null) {
-                        var givingPrice = (bet.price * odds).toInt()
+                        var givingPrice: Double = (bet.price * odds)
                         Bukkit.broadcastMessage(pl!!.prefix +
                                 "§b" + Bukkit.getPlayer(bet.playerUUID).name +
-                                "§fが正解にベットし、§e" + givingPrice.toString() + "円§f獲得しました。")
-                    } else {
+                                "§fが正解にベットし、§e" + givingPrice.roundTo2DecimalPlaces().toString() + "円§f獲得しました。")
+                        pl!!.vault!!.deposit(bet.playerUUID, givingPrice)
                     }
                 }
+
                 endingGame.status = GameStatus.OFF
                 endingGame.candidates = mutableListOf()
                 endingGame.players = mutableMapOf()
@@ -517,7 +567,7 @@ class BookMakerGameManager {
         }
 
         otherTotalPrice *= (1 - (tax + prize))
-        return ((fighterTotalPrice + otherTotalPrice) / fighterTotalPrice).roundTo2DecimalPlaces()
+        return ((fighterTotalPrice + otherTotalPrice) / fighterTotalPrice)
 
     }
 
@@ -559,6 +609,7 @@ class BookMakerGameManager {
                         p.performCommand("spawn")
                     }
                 }
+                Bukkit.dispatchCommand(console, "minecraft:tellraw @a {\"text\":\"§2§l<<< §e§lクリックでブックメーカーロビーに戻る§2§l >>>\",\"clickEvent\":{\"action\":\"run_command\",\"value\":\"/mb return " + gameID + "\"}}")
                 pl!!.sidebar!!.removeAll()
             }
         }

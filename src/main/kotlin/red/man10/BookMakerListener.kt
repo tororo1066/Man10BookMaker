@@ -2,12 +2,15 @@ package red.man10
 
 import org.bukkit.Bukkit
 import org.bukkit.Material
+import org.bukkit.block.Block
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
+import org.bukkit.event.block.SignChangeEvent
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryCloseEvent
 import org.bukkit.event.player.*
+import org.bukkit.block.Sign
 import java.util.*
 
 class BookMakerListener: Listener {
@@ -112,7 +115,7 @@ class BookMakerListener: Listener {
                 e.isCancelled = true
                 if (pl!!.gui.numberPlaces.contains(e.slot)) {
                     var number = e.currentItem.itemMeta.displayName.substring(4)
-                    if (pl!!.gui.currentNumbers[e.whoClicked.name]!!.length <= 8) {
+                    if (pl!!.gui.currentNumbers[e.whoClicked.name]!!.length <= 7) {
                         pl!!.gui.currentNumbers[e.whoClicked.name] = (pl!!.gui.currentNumbers[e.whoClicked.name]!! + number)
                         pl!!.gui.setBetNumber(e.whoClicked as Player)
                     }
@@ -125,7 +128,7 @@ class BookMakerListener: Listener {
                             var gameId = e.currentItem.itemMeta.lore[0].substring(6)
                             var playerUUID = UUID.fromString(e.currentItem.itemMeta.lore[1].substring(5))
 
-                            pl!!.gameManager.bet(e.whoClicked as Player, playerUUID, gameId, pl!!.gui.currentNumbers[e.whoClicked.name]!!.toDouble())
+                            pl!!.gameManager.bet(e.whoClicked as Player, playerUUID, gameId, pl!!.gui.currentNumbers[e.whoClicked.name]!!.toDouble() * 10000)
                             e.whoClicked.closeInventory()
                         }
                         "§4§lキャンセル" -> {
@@ -239,6 +242,75 @@ class BookMakerListener: Listener {
                             e.isCancelled = true
                             e.player.sendMessage(pl!!.prefix + "試合中はポーションは使用できません。")
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    fun onSignChange(e: SignChangeEvent) {
+        if (e.player.hasPermission("mb.op")) {
+            if (e.getLine(0) == "bookmaker") {
+                if (pl!!.gameManager.loadedGames.keys.contains(e.getLine(1))) {
+                    e.setLine(3, e.getLine(1))
+                    e.setLine(0, "§l[§8§lmBookMaker§0§l]")
+                    e.setLine(1, "§l" + pl!!.gameManager.loadedGames[e.getLine(1)]!!.gameName)
+                    when (e.getLine(2)) {
+                        "open" -> {
+                            e.setLine(2, "§l[ゲーム起動]")
+                        }
+                        "join" -> {
+                            e.setLine(2, "§l[試合に参加登録]")
+                        }
+                        "bet" -> {
+                            e.setLine(2, "§l[ベット]")
+                        }
+                        "view" -> {
+                            e.setLine(2, "§l[観戦]")
+                        }
+                        else -> {
+                            e.isCancelled = true
+                            e.player.sendMessage(pl!!.prefix + "§l3行目はjoin/bet/view/startのいずれかにしてください。")
+                        }
+                    }
+                } else {
+                    e.isCancelled = true
+                    e.player.sendMessage(pl!!.prefix + "§l指定されたゲーム名のゲームは存在しません。")
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    fun onPlayerInteract(e: PlayerInteractEvent) {
+        //print(e.clickedBlock)
+        if (e.clickedBlock != null) {
+            if (e.clickedBlock.type == Material.WALL_SIGN) {
+                val sign = e.clickedBlock.state as Sign
+                //print(sign.getLine(0))
+                if (sign.getLine(0).equals("§l[§8§lmBookMaker§0§l]", true)) {
+                    //print(sign.getLine(2))
+                    var gameId = sign.getLine(3)
+                    if (pl!!.isLocked == false) {
+                        when (sign.getLine(2)) {
+                            "§l[ゲーム起動]" -> {
+                                pl!!.gameManager.openNewGame(gameId, e.player)
+                            }
+                            "§l[試合に参加登録]" -> {
+                                pl!!.gameManager.addCandidate(e.player, gameId)
+                            }
+                            "§l[ベット]" -> {
+                                if (e.player.hasPermission("mb.bet")) {
+                                    pl!!.gui.openPlayerSelectMenu(e.player, gameId)
+                                }
+                            }
+                            "§l[観戦]" -> {
+                                pl!!.gameManager.viewTeleport(gameId, e.player)
+                            }
+                        }
+                    } else {
+                        e.player.sendMessage(pl!!.prefix + "§l現在BookmakerはOFFになってます。")
                     }
                 }
             }
