@@ -1,21 +1,19 @@
 package red.man10
 
+import com.sk89q.worldguard.WorldGuard
+import com.sk89q.worldguard.protection.regions.RegionContainer
 import org.bukkit.Bukkit
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
-import com.sk89q.worldguard.bukkit.WorldGuardPlugin
-import com.sk89q.worldguard.bukkit.WGBukkit
-import com.sk89q.worldguard.bukkit.RegionContainer
-import com.sk89q.worldguard.protection.managers.RegionManager
 import java.util.*
 
-enum class GameStatus(val rawValue :Int)  {
-    OFF(1),
-    JOIN(2),
-    BET(3),
-    FIGHT(4)
+enum class GameStatus {
+    OFF,
+    JOIN,
+    BET,
+    FIGHT
 }
 
 class BookMakerPlugin: JavaPlugin() {
@@ -29,11 +27,11 @@ class BookMakerPlugin: JavaPlugin() {
 
     var isLocked = true
 
-    var vault: VaultManager? = null
+    lateinit var vault : VaultManager
 
     val prefix = "§l[§a§lm§6§lBookMaker§f§l]§r "
 
-    var worldguard: WorldGuardPlugin? = null
+    lateinit var worldguard: RegionContainer
 
     var freezedPlayer = mutableListOf<UUID>()
 
@@ -41,9 +39,9 @@ class BookMakerPlugin: JavaPlugin() {
         logger.info("Man10BookMaker Enabled")
         server.pluginManager.registerEvents(listener, this)
 
-        vault = VaultManager(this)
+        vault = VaultManager()
 
-        worldguard = WGBukkit.getPlugin()
+        worldguard = WorldGuard.getInstance().platform.regionContainer
 
         configManager.loadConfig(null)
 
@@ -64,7 +62,7 @@ class BookMakerPlugin: JavaPlugin() {
         if (sender is Player) {
             if (args.isEmpty()) {
                 if (sender.hasPermission("mp.play")) {
-                    if (isLocked == false) {
+                    if (!isLocked) {
                         gui.openTopMenu(sender)
                     } else {
                         sender.sendMessage(prefix + "ブックメーカーは現在OFFになっています。")
@@ -98,7 +96,7 @@ class BookMakerPlugin: JavaPlugin() {
                 }
 
                 if (args[0] == "open" ){
-                    if (isLocked == false) {
+                    if (!isLocked) {
                         if (args.size == 2) {
                             gameManager.openNewGame(args[1], sender)
                             return true
@@ -132,7 +130,7 @@ class BookMakerPlugin: JavaPlugin() {
                                     sender.sendMessage(prefix + "指定されたゲームは存在しません。")
                                 } else {
                                     //FLAG
-                                    var checkingGame: Game = gameManager.loadedGames[args[1]]!!
+                                    val checkingGame: Game = gameManager.loadedGames[args[1]]!!
                                     sender.sendMessage(prefix + "§6" + args[1] + "のデーター")
                                     sender.sendMessage(prefix + "§7ゲーム名: " + checkingGame.gameName)
                                     sender.sendMessage(prefix + "§7GUI表示アイテム: " + checkingGame.item.toString())
@@ -159,22 +157,22 @@ class BookMakerPlugin: JavaPlugin() {
                             if (args.size == 3) {
                                 if (gameManager.runningGames[args[1]] != null) {
                                     if (Bukkit.getPlayer(args[2]) != null) {
-                                        gameManager.endGame(args[1], Bukkit.getPlayer(args[2]).uniqueId)
+                                        Bukkit.getPlayer(args[2])?.let { gameManager.endGame(args[1], it.uniqueId) }
                                     } else {
                                         if (gameManager.UUIDMap.keys.contains(gameManager.runningGames[args[1]]!!.players.keys.toList()[0])) {
                                             if (args[2].toIntOrNull() == null) {
-                                                sender.sendMessage(prefix + "§4§lERROR: §f§l選択肢の番号を入力してください。")
+                                                sender.sendMessage("$prefix§4§lERROR: §f§l選択肢の番号を入力してください。")
                                             } else {
                                                 if (args[2].toInt() == 1 || args[2].toInt() == 2) {
                                                     gameManager.endGame(args[1], gameManager.runningGames[args[1]]!!.players.keys.toList()[args[2].toInt() - 1])
                                                 }
                                             }
                                         } else {
-                                            sender.sendMessage(prefix + "§4§lERROR: §f§lプレイヤーが存在しません。")
+                                            sender.sendMessage("$prefix§4§lERROR: §f§lプレイヤーが存在しません。")
                                         }
                                     }
                                 } else {
-                                    sender.sendMessage(prefix + "§4§lERROR: §f§l指定されたゲームが存在しません。")
+                                    sender.sendMessage("$prefix§4§lERROR: §f§l指定されたゲームが存在しません。")
                                 }
                             } else {
                                 sender.sendMessage(prefix + "コマンドの使用方法が間違っています。/mb help")
@@ -187,7 +185,7 @@ class BookMakerPlugin: JavaPlugin() {
                                     Bukkit.broadcastMessage(prefix + "§l運営によって§6§l「" + gameManager.runningGames[args[1]]!!.gameName + "」§f§lが停止されました。")
                                     gameManager.stopGame(args[1])
                                 } else {
-                                    sender.sendMessage(prefix + "§4§lERROR: §f§l指定されたゲームは存在しません")
+                                    sender.sendMessage("$prefix§4§lERROR: §f§l指定されたゲームは存在しません")
                                 }
                             } else {
                                 sender.sendMessage(prefix + "コマンドの使用方法が間違っています。/mb help")
@@ -241,7 +239,7 @@ class BookMakerPlugin: JavaPlugin() {
         return true
     }
 
-    fun showHelp(sender: CommandSender) {
+    private fun showHelp(sender: CommandSender) {
         sender.sendMessage("§f§l=====( §a§lm§6§lBookMaker§f§l )=====")
         sender.sendMessage("§6《データー管理系》")
         sender.sendMessage("§a/mb reload §7config.ymlとregionをリロードする")

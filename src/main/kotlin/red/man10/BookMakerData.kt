@@ -110,7 +110,7 @@ class BookMakerData {
         }
     }
 
-    var betsTable = "CREATE TABLE `bets` (\n" +
+    var betsTable = "CREATE TABLE IF NOT EXISTS`bets` (\n" +
             "  `id` int(11) NOT NULL AUTO_INCREMENT,\n" +
             "  `fighter_id` int(11) NOT NULL,\n" +
             "  `price` double(16,2) NOT NULL,\n" +
@@ -121,7 +121,7 @@ class BookMakerData {
             "  CONSTRAINT `fighter` FOREIGN KEY (`fighter_id`) REFERENCES `fighters` (`id`)\n" +
             ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
 
-    var fightersTable = "CREATE TABLE `fighters` (\n" +
+    var fightersTable = "CREATE TABLE IF NOT EXISTS `fighters` (\n" +
             "  `id` int(11) NOT NULL AUTO_INCREMENT,\n" +
             "  `fight_id` int(11) NOT NULL,\n" +
             "  `name` varchar(20) NOT NULL DEFAULT 'NONAME',\n" +
@@ -131,7 +131,7 @@ class BookMakerData {
             "  CONSTRAINT `fight` FOREIGN KEY (`fight_id`) REFERENCES `fights` (`id`)\n" +
             ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
 
-    var fightsTable = "CREATE TABLE `fights` (\n" +
+    var fightsTable = "CREATE TABLE IF NOT EXISTS `fights` (\n" +
             "  `id` int(11) NOT NULL AUTO_INCREMENT,\n" +
             "  `winner_id` int(11) DEFAULT NULL,\n" +
             "  `game_id` varchar(64) NOT NULL,\n" +

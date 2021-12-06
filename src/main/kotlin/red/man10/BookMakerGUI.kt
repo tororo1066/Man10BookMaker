@@ -4,12 +4,8 @@ import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.inventory.Inventory
-import org.bukkit.inventory.ItemFlag
 import org.bukkit.inventory.ItemStack
-import org.bukkit.inventory.meta.ItemMeta
-import java.nio.file.Files.setOwner
 import org.bukkit.inventory.meta.SkullMeta
-import java.nio.file.Files.list
 import java.util.*
 
 
@@ -26,18 +22,29 @@ class BookMakerGUI {
 
     var fighterPlaces = listOf(listOf(4), listOf(3,5), listOf(2,4,6), listOf(1,3,5,7), listOf(0,2,4,6,8))
 
-    var numberDurabilities = mapOf<Int, Short>(0 to 933, 1 to 932, 2 to 931, 3 to 930, 4 to 929, 5 to 928, 6 to 927, 7 to 926, 8 to 925, 9 to 924)
+    var numberTextures = listOf(
+        "http://textures.minecraft.net/texture/3f09018f46f349e553446946a38649fcfcf9fdfd62916aec33ebca96bb21b5",
+        "http://textures.minecraft.net/texture/ca516fbae16058f251aef9a68d3078549f48f6d5b683f19cf5a1745217d72cc",
+        "http://textures.minecraft.net/texture/4698add39cf9e4ea92d42fadefdec3be8a7dafa11fb359de752e9f54aecedc9a",
+        "http://textures.minecraft.net/texture/b85d4fda56bfeb85124460ff72b251dca8d1deb6578070d612b2d3adbf5a8",
+        "http://textures.minecraft.net/texture/f2a3d53898141c58d5acbcfc87469a87d48c5c1fc82fb4e72f7015a3648058",
+        "http://textures.minecraft.net/texture/d1fe36c4104247c87ebfd358ae6ca7809b61affd6245fa984069275d1cba763",
+        "http://textures.minecraft.net/texture/3ab4da2358b7b0e8980d03bdb64399efb4418763aaf89afb0434535637f0a1",
+        "http://textures.minecraft.net/texture/297712ba32496c9e82b20cc7d16e168b035b6f89f3df014324e4d7c365db3fb",
+        "http://textures.minecraft.net/texture/abc0fda9fa1d9847a3b146454ad6737ad1be48bdaa94324426eca0918512d",
+        "http://textures.minecraft.net/texture/d6abc61dcaefbd52d9689c0697c24c7ec4bc1afb56b8b3755e6154b24a5d8ba"
+    )
     var numberPlaces = listOf(46, 19, 20, 21, 28, 29, 30, 37, 38, 39)
 
     var numberStacks = mutableListOf<ItemStack>()
 
-    var textDurabilities = listOf(958, 955, 940)
+    var textCSM = listOf(66,69,84)
     var textPlaces = listOf(23, 24, 25)
 
     var currentNumbers: MutableMap<String, String> = mutableMapOf()
 
     companion object {
-        var pl: BookMakerPlugin? = null
+        lateinit var pl: BookMakerPlugin
     }
 
     fun returnGUI(plugin: BookMakerPlugin) : BookMakerGUI{
@@ -46,32 +53,32 @@ class BookMakerGUI {
     }
 
     fun openTopMenu(p: Player) {
-        var topMenu = Bukkit.getServer().createInventory(null, 54, "§0§l[§7§lm§8§lBookMaker§0§l] §r§l開催中のゲーム")
+        val topMenu = Bukkit.getServer().createInventory(null, 54, "§0§l[§7§lm§8§lBookMaker§0§l] §r§l開催中のゲーム")
         //var testInv = Bukkit.getServer().createInventory(null, InventoryType.ANVIL)
 
-        var nolores: List<String> = ArrayList()
+        val nolores: List<String> = ArrayList()
 
         for (place in redGlassPlaces) {
-            createItem(place, topMenu, Material.STAINED_GLASS_PANE, 14, 1, "§c§l参加登録受付中§f§lのゲーム", nolores)
+            createItem(place, topMenu, Material.GLASS_PANE, 14, 1, "§c§l参加登録受付中§f§lのゲーム", nolores)
         }
         for (place in blueGlassPlaces) {
-            createItem(place, topMenu, Material.STAINED_GLASS_PANE, 11, 1, "§9§lベット受付中§f§lのゲーム", nolores)
+            createItem(place, topMenu, Material.GLASS_PANE, 11, 1, "§9§lベット受付中§f§lのゲーム", nolores)
         }
         for (place in yellowGlassPlaces) {
-            createItem(place, topMenu, Material.STAINED_GLASS_PANE, 4, 1, "§e§l試合中§f§lのゲーム", nolores)
+            createItem(place, topMenu, Material.GLASS_PANE, 4, 1, "§e§l試合中§f§lのゲーム", nolores)
         }
         for (place in dividerPlaces) {
-            createItem(place, topMenu, Material.IRON_FENCE, 0, 1, " ", nolores)
+            createItem(place, topMenu, Material.IRON_BARS, 0, 1, " ", nolores)
         }
 
 
         var joinPhase = 0
         var betPhase = 0
         var fightPhase = 0
-        for (runningGame in pl!!.gameManager.runningGames) {
+        for (runningGame in pl.gameManager.runningGames) {
             when (runningGame.value.status) {
                 GameStatus.JOIN -> {
-                    var lore: List<String> = listOf(
+                    val lore: List<String> = listOf(
                             "§eクリックで参加登録！ (抽選)",
                             "§7現在登録者: §6" + runningGame.value.candidates.count() + "人",
                             "§7プレイ人数: §6" + runningGame.value.playerNumber + "人",
@@ -84,18 +91,17 @@ class BookMakerGUI {
                     }
                 }
                 GameStatus.BET -> {
-                    var lore: List<String> = mutableListOf()
-                    if (!pl!!.gameManager.UUIDMap.keys.contains(runningGame.value.players.keys.first())) {
-                        lore = mutableListOf(
-                                "§eクリックでベット！",
-                                "§f勝つと思う方に賭けて、配当金を受け取ろう！",
-                                "§8id: " + runningGame.key
+                    val lore: List<String> = if (!pl.gameManager.UUIDMap.keys.contains(runningGame.value.players.keys.first())) {
+                        mutableListOf(
+                            "§eクリックでベット！",
+                            "§f勝つと思う方に賭けて、配当金を受け取ろう！",
+                            "§8id: " + runningGame.key
                         )
                     } else {
-                        lore = mutableListOf(
-                                "§eクリックでベット！",
-                                "§f正解だと思う方に賭けて、賞金を受け取ろう！",
-                                "§8id: " + runningGame.key
+                        mutableListOf(
+                            "§eクリックでベット！",
+                            "§f正解だと思う方に賭けて、賞金を受け取ろう！",
+                            "§8id: " + runningGame.key
                         )
                     }
                     if (betPhase != betPhasePlaces.size) {
@@ -104,7 +110,7 @@ class BookMakerGUI {
                     }
                 }
                 GameStatus.FIGHT -> {
-                    var lore: MutableList<String> = mutableListOf()
+                    val lore: MutableList<String> = mutableListOf()
                     if (runningGame.value.viewingLocation != null) {
                         lore.add("§eクリックで観戦しよう!")
                     }
@@ -115,7 +121,7 @@ class BookMakerGUI {
                     }
                 }
                 else -> {
-                    p.sendMessage(pl!!.prefix + "§4§lERROR: §f§l問題が発生しました。運営に報告してください。")
+                    p.sendMessage(pl.prefix + "§4§lERROR: §f§l問題が発生しました。運営に報告してください。")
                 }
             }
         }
@@ -123,95 +129,82 @@ class BookMakerGUI {
     }
 
     fun openPlayerSelectMenu(p: Player, gameId: String) {
-        if (pl!!.gameManager.runningGames[gameId] != null) {
-            if (pl!!.gameManager.runningGames[gameId]!!.status == GameStatus.BET) {
-                val players = pl!!.gameManager.runningGames[gameId]!!.players.keys
+        if (pl.gameManager.runningGames[gameId] != null) {
+            if (pl.gameManager.runningGames[gameId]!!.status == GameStatus.BET) {
+                val players = pl.gameManager.runningGames[gameId]!!.players.keys
                 if (players.size <= 6) {
-                    if (!pl!!.gameManager.UUIDMap.keys.contains(players.first())) {
-                        var playerSelectMenu = Bukkit.getServer().createInventory(null, 9, "§0§l[§7§lm§8§lBookMaker§0§l] §r§l勝者を予想してベット!")
-                        var i = 0
-                        for (place in fighterPlaces[players.size - 1]) {
+                    if (!pl.gameManager.UUIDMap.keys.contains(players.first())) {
+                        val playerSelectMenu = Bukkit.getServer().createInventory(null, 9, "§0§l[§7§lm§8§lBookMaker§0§l] §r§l勝者を予想してベット!")
+                        for ((i, place) in fighterPlaces[players.size - 1].withIndex()) {
                             //createItem(place, playerSelectMenu, Material.STICK, 0, 1, "i", listOf())
-                            var playerName: String = Bukkit.getPlayer(players.toMutableList()[i]).name
-                            var dataLore = listOf(
+                            val playerName: String = Bukkit.getPlayer(players.toMutableList()[i])?.name?:""
+                            val dataLore = listOf(
                                     "§eクリックでベット!",
                                     "§8id: " + (players.toMutableList()[i]),
-                                    "§8game: " + gameId)
+                                "§8game: $gameId"
+                            )
                             createSkull(playerName, "§c§lP" + (i + 1).toString() + ": §f§l" + playerName, playerSelectMenu, place, dataLore)
-                            i++
                         }
                         p.openInventory(playerSelectMenu)
                     } else {
                         //AskType
-                        var playerSelectMenu = Bukkit.getServer().createInventory(null, 9, "§0§l[§7§lm§8§lBookMaker§0§l] §r§l正解を予想してベット!")
-                        var i = 0
-                        for (place in fighterPlaces[players.size - 1]) {
+                        val playerSelectMenu = Bukkit.getServer().createInventory(null, 9, "§0§l[§7§lm§8§lBookMaker§0§l] §r§l正解を予想してベット!")
+                        for ((i, place) in fighterPlaces[players.size - 1].withIndex()) {
                             //createItem(place, playerSelectMenu, Material.STICK, 0, 1, "i", listOf())
-                            var selectionText: String = pl!!.gameManager.UUIDMap[players.toList()[i]]!!
-                            var dataLore = listOf(
+                            val selectionText: String = pl.gameManager.UUIDMap[players.toList()[i]]!!
+                            val dataLore = listOf(
                                     "§eクリックでベット!",
                                     "§8id: " + (players.toMutableList()[i]),
-                                    "§8game: " + gameId)
-                            createItem(place, playerSelectMenu, Material.SIGN, 0.toShort(), 1, "§c§l" + (i + 1).toString() + ": §f§l" + selectionText, dataLore)
-                            i++
+                                "§8game: $gameId"
+                            )
+                            createItem(place, playerSelectMenu, Material.OAK_SIGN, null, 1, "§c§l" + (i + 1).toString() + ": §f§l" + selectionText, dataLore)
                         }
                         p.openInventory(playerSelectMenu)
                     }
                 } else {
-                    p.sendMessage(pl!!.prefix + "§4§lERROR: §f§l問題が発生しました。エラーコード001")
+                    p.sendMessage(pl.prefix + "§4§lERROR: §f§l問題が発生しました。エラーコード001")
                 }
             } else {
-                p.sendMessage(BookMakerGameManager.pl!!.prefix + "§l今はベットフェーズではありません。")
+                p.sendMessage(pl.prefix + "§l今はベットフェーズではありません。")
             }
         } else {
-            p.sendMessage(BookMakerGameManager.pl!!.prefix + "§lゲームが存在しません。")
+            p.sendMessage(pl.prefix + "§lゲームが存在しません。")
         }
     }
 
     fun openBetMenu(p: Player, gameId: String, bettedUUID: UUID) {
-        if (pl!!.gameManager.runningGames[gameId] != null) {
-            if (pl!!.gameManager.runningGames[gameId]!!.status == GameStatus.BET) {
+        if (pl.gameManager.runningGames[gameId] != null) {
+            if (pl.gameManager.runningGames[gameId]!!.status == GameStatus.BET) {
                 if (currentNumbers[p.name] == null) {
-                    currentNumbers.put(p.name, "")
+                    currentNumbers[p.name] = ""
                 } else {
                     currentNumbers[p.name] = ""
                 }
 
-                var betMenu = Bukkit.getServer().createInventory(null, 54, "§0§l[§7§lm§8§lBookMaker§0§l] §r§lベット金額を入力")
+                val betMenu = Bukkit.getServer().createInventory(null, 54, "§0§l[§7§lm§8§lBookMaker§0§l] §r§lベット金額を入力")
                 for (i in 9..53) {
-                    createItem(i, betMenu, Material.STAINED_GLASS_PANE, 15, 1, " ", listOf())
+                    createItem(i, betMenu, Material.GLASS_PANE, 15, 1, " ", listOf())
                 }
                 for (i in 0..9) {
-                    val numberItemStack = ItemStack(Material.DIAMOND_HOE, 1, numberDurabilities[i]!!.toShort())
-                    val numberItemMeta = numberItemStack.itemMeta
-                    numberItemMeta.displayName = "§r§l" + i.toString()
-                    numberItemMeta.isUnbreakable = true
-                    numberItemMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE);
-                    numberItemStack.itemMeta = numberItemMeta
+                    val numberItemStack = SkullMaker().withSkinUrl(numberTextures[i]).withName("§r§l$i").build()
                     numberStacks.add(numberItemStack)
                     betMenu.setItem(numberPlaces[i], numberItemStack)
                 }
                 for (i in 0..2) {
-                    val numberItemStack = ItemStack(Material.DIAMOND_HOE, 1, textDurabilities[i].toShort())
+                    val numberItemStack = ItemStack(Material.QUARTZ)
                     val numberItemMeta = numberItemStack.itemMeta
-                    numberItemMeta.displayName = " "
-                    numberItemMeta.isUnbreakable = true
-                    numberItemMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE);
+                    numberItemMeta?.setDisplayName(" ")
+                    numberItemMeta?.setCustomModelData(textCSM[i])
                     numberItemStack.itemMeta = numberItemMeta
                     betMenu.setItem(textPlaces[i], numberItemStack)
                 }
                 createItem(48, betMenu, Material.TNT, 0, 1, "§4§lリセット", listOf())
-                createItem(41, betMenu, Material.EMERALD_BLOCK, 0, 1, "§a§l決定", listOf("§8id: " + gameId, "§8p: " + bettedUUID.toString()))
+                createItem(41, betMenu, Material.EMERALD_BLOCK, 0, 1, "§a§l決定", listOf(
+                    "§8id: $gameId",
+                    "§8p: $bettedUUID"
+                ))
                 createItem(43, betMenu, Material.REDSTONE_BLOCK, 0, 1, "§4§lキャンセル", listOf())
 
-                val man = ItemStack(Material.DIAMOND_HOE, 1, 555.toShort())
-                val manMeta = man.itemMeta
-                manMeta.displayName = "§r§l万円"
-                manMeta.lore = listOf()
-                manMeta.isUnbreakable = true
-                manMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_UNBREAKABLE)
-                man.itemMeta = manMeta
-                betMenu.setItem(8, man)
                 p.openInventory(betMenu)
             } else {
                 p.sendMessage("§4§lERROR: §f§l試合がすでに始まっています")
@@ -220,12 +213,12 @@ class BookMakerGUI {
     }
 
     fun setBetNumber(p: Player) {
-        var numberString = currentNumbers[p.name]
+        val numberString = currentNumbers[p.name]
         var oppositeNumberString = ""
         for (char in numberString!!) {
             oppositeNumberString = char + oppositeNumberString
         }
-        var i = 7
+        var i = 8
         for (char in oppositeNumberString) {
             p.openInventory.topInventory.setItem(i, numberStacks[char.toString().toInt()]) //toString挟まないとおかしくなる
             i--
@@ -239,20 +232,21 @@ class BookMakerGUI {
         }
     }
 
-    fun createItem(place: Int?, gui: Inventory, material: Material, itemtype: Short?, amount: Int?, itemName: String, loreList: List<String>) {
-        val CIitemStack = ItemStack(material, amount!!, itemtype!!)
-        val CIitemMeta = CIitemStack.itemMeta
-        CIitemMeta.displayName = itemName
-        CIitemMeta.lore = loreList
-        CIitemStack.itemMeta = CIitemMeta
-        gui.setItem(place!!, CIitemStack)
+    private fun createItem(place: Int?, gui: Inventory, material: Material, itemtype: Int?, amount: Int, itemName: String, loreList: List<String>) {
+        val cIitemStack = ItemStack(material, amount)
+        val cIitemMeta = cIitemStack.itemMeta
+        cIitemMeta?.setDisplayName(itemName)
+        cIitemMeta?.lore = loreList
+        cIitemMeta?.setCustomModelData(itemtype)
+        cIitemStack.itemMeta = cIitemMeta
+        gui.setItem(place!!, cIitemStack)
     }
 
-    fun createSkull(username: String, itemName: String, gui: Inventory, place: Int, lore: List<String>) {
-        val skull = ItemStack(Material.SKULL_ITEM, 1, 3.toShort())
+    private fun createSkull(username: String, itemName: String, gui: Inventory, place: Int, lore: List<String>) {
+        val skull = ItemStack(Material.PLAYER_HEAD, 1, 3.toShort())
         val meta = skull.itemMeta as SkullMeta
-        meta.displayName = itemName
-        meta.owner = username
+        meta.setDisplayName(itemName)
+        meta.owningPlayer = Bukkit.getOfflinePlayer(username)
         meta.lore = lore
         skull.itemMeta = meta
         gui.setItem(place, skull)

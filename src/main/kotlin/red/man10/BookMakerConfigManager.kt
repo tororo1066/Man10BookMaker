@@ -8,7 +8,7 @@ import org.bukkit.entity.Player
 class BookMakerConfigManager {
 
     companion object {
-        var pl: BookMakerPlugin? = null
+        lateinit var pl: BookMakerPlugin
     }
 
     fun returnConfigManager(plugin: BookMakerPlugin) : BookMakerConfigManager{
@@ -17,28 +17,28 @@ class BookMakerConfigManager {
     }
 
     fun loadConfig(sender: CommandSender?){
-        pl!!.saveDefaultConfig()
-        pl!!.reloadConfig()
-        pl!!.saveDefaultConfig()
-        val config = pl!!.config
+        pl.saveDefaultConfig()
+        pl.reloadConfig()
+        pl.saveDefaultConfig()
+        val config = pl.config
 
-        if (!config.getKeys(true).isEmpty()) {
+        if (config.getKeys(true).isNotEmpty()) {
             Bukkit.broadcastMessage(config.getKeys(false).toString())
 
             if (sender != null) {
-                pl!!.gameManager.setUpGames(config, (sender as Player))
-                sender.sendMessage(pl!!.prefix + "config.ymlのゲームが読み込まれました。")
+                pl.gameManager.setUpGames(config, (sender as Player))
+                sender.sendMessage(pl.prefix + "config.ymlのゲームが読み込まれました。")
             } else {
-                pl!!.gameManager.setUpGames(config, null)
-                print(pl!!.prefix + "config.ymlのゲームが読み込まれました。")
+                pl.gameManager.setUpGames(config, null)
+                print(pl.prefix + "config.ymlのゲームが読み込まれました。")
             }
 
         } else {
 
             if (sender != null) {
-                sender.sendMessage(pl!!.prefix + "config.ymlにゲームがありません！")
+                sender.sendMessage(pl.prefix + "config.ymlにゲームがありません！")
             } else {
-                print(pl!!.prefix + "config.ymlにゲームがありません！")
+                print(pl.prefix + "config.ymlにゲームがありません！")
             }
 
         }

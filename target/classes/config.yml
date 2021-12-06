@@ -1,0 +1,23 @@
+horcerace:
+  name: "競馬"
+  playerNumber: 3
+  item: "STONE"
+  joinFee: 10000
+
+boatrace:
+  name: "ボートレース"
+  playerNumber: 4
+  item: "GRASS"
+  joinFee: 40000
+
+pvp:
+  name: "1vs1 PvPゲーム"
+  playerNumber: 2
+  item: "WOOL"
+  joinFee: 30000
+
+vote:
+  name: "2択ゲーム"
+  playerNumber: 2
+  item: "aaa"
+  joinFee: 20000

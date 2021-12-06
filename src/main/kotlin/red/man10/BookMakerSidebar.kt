@@ -35,7 +35,7 @@ class BookMakerSidebar {
         sideBar.setScore("§l総賭け金: §a§l" + pl!!.gameManager.getTotalPrice(game.players), 8)
         sideBar.setScore("§lオッズ:", 7)
         for (fighter in game.players) {
-            sideBar.setScore("§c§l" + Bukkit.getPlayer(fighter.key).name + ": §a§l" + pl!!.gameManager.getOdds(game.players, fighter.key, game.tax, game.prize).roundTo2DecimalPlaces() + "倍", 6)
+            sideBar.setScore("§c§l" + Bukkit.getPlayer(fighter.key)?.name + ": §a§l" + pl!!.gameManager.getOdds(game.players, fighter.key, game.tax, game.prize).roundTo2DecimalPlaces() + "倍", 6)
         }
         sideBar.setScore("§e§l勝者を予想して、/mb でベット!", 5)
         showToAll()
@@ -48,17 +48,17 @@ class BookMakerSidebar {
         sideBar.setScore("§lゲーム: §a§l" + game.gameName, 9)
         sideBar.setScore("§l参加応募者:", 9)
         for (candidate in game.candidates) {
-            if (BookMakerGameManager.pl!!.data!!.getBestRecord(gameId, candidate) != null) {
-                sideBar.setScore("§c§l" + Bukkit.getPlayer(candidate).name + " §e§l最高記録: " + pl!!.data!!.getBestRecord(gameId, candidate).toString() + "秒", 7)
+            if (BookMakerGameManager.pl.data!!.getBestRecord(gameId, candidate) != null) {
+                sideBar.setScore("§c§l" + Bukkit.getPlayer(candidate)?.name + " §e§l最高記録: " + pl!!.data!!.getBestRecord(gameId, candidate).toString() + "秒", 7)
             } else {
-                sideBar.setScore("§c§l" + Bukkit.getPlayer(candidate).name + " §e§l記録無し", 7)
+                sideBar.setScore("§c§l" + Bukkit.getPlayer(candidate)?.name + " §e§l記録無し", 7)
             }
         }
         sideBar.setScore("§e§l/mbで試合に参加登録!", 5)
         showToAll()
     }
 
-    fun showToAll() {
+    private fun showToAll() {
         for (player in Bukkit.getServer().onlinePlayers) {
             sideBar.setMainScoreboard(player)
             sideBar.setShowPlayer(player)
@@ -74,7 +74,7 @@ class BookMakerSidebar {
         sideBar.setScore("§l総賭け金: §a§l" + pl!!.gameManager.getTotalPrice(game.players), 8)
         sideBar.setScore("§lオッズ:", 7)
         for (fighter in game.players) {
-            sideBar.setScore("§c§l" + Bukkit.getPlayer(fighter.key).name + ": §a§l" + pl!!.gameManager.getOdds(game.players, fighter.key, game.tax, game.prize).roundTo2DecimalPlaces() + "倍", 6)
+            sideBar.setScore("§c§l" + Bukkit.getPlayer(fighter.key)?.name + ": §a§l" + pl!!.gameManager.getOdds(game.players, fighter.key, game.tax, game.prize).roundTo2DecimalPlaces() + "倍", 6)
         }
         sideBar.setScore("§e§l/mb で試合観戦!", 5)
         showToAll()
@@ -84,6 +84,6 @@ class BookMakerSidebar {
         sideBar.remove()
     }
 
-    fun Double.roundTo2DecimalPlaces() = BigDecimal(this).setScale(2, BigDecimal.ROUND_HALF_UP).toDouble()
+    private fun Double.roundTo2DecimalPlaces() = BigDecimal(this).setScale(2, BigDecimal.ROUND_HALF_UP).toDouble()
 }
 

@@ -1,68 +1,59 @@
 package red.man10
 
 import net.milkbowl.vault.economy.Economy
-import net.milkbowl.vault.economy.EconomyResponse
 import org.bukkit.Bukkit
 import org.bukkit.ChatColor
 import org.bukkit.OfflinePlayer
-import org.bukkit.plugin.RegisteredServiceProvider
-import org.bukkit.plugin.java.JavaPlugin
+import java.util.*
 
-import java.util.UUID
 
 /**
- * Created by takatronix on 2017/03/04.
+ * Created by sho on 2017/07/21.
  */
-class VaultManager(private val plugin: JavaPlugin) {
-    init {
-        setupEconomy()
-    }
-
+class VaultManager {
     private fun setupEconomy(): Boolean {
-        plugin.logger.info("setupEconomy")
-        if (plugin.server.pluginManager.getPlugin("Vault") == null) {
-            plugin.logger.warning("Vault plugin is not installed")
+        Bukkit.getLogger().info("setupEconomy")
+        if (Bukkit.getServer().pluginManager.getPlugin("Vault") == null) {
+            Bukkit.getLogger().warning("Vault plugin is not installed")
             return false
         }
-        val rsp = plugin.server.servicesManager.getRegistration(Economy::class.java)
+        val rsp = Bukkit.getServer().servicesManager.getRegistration(
+            Economy::class.java
+        )
         if (rsp == null) {
-            plugin.logger.warning("Can't get vault service")
+            Bukkit.getLogger().warning("Can't get vault service")
             return false
         }
         economy = rsp.provider
-        plugin.logger.info("Economy setup")
+        Bukkit.getLogger().info("Economy setup")
         return economy != null
     }
 
     /////////////////////////////////////
     //      残高確認
     /////////////////////////////////////
-    fun getBalance(uuid: UUID): Double {
-        return economy!!.getBalance(Bukkit.getOfflinePlayer(uuid).player)
+    fun getBalance(uuid: UUID?): Double {
+        return economy!!.getBalance(Bukkit.getOfflinePlayer(uuid!!).player)
     }
 
     /////////////////////////////////////
     //      残高確認
     /////////////////////////////////////
-    fun showBalance(uuid: UUID) {
-        val p = Bukkit.getOfflinePlayer(uuid).player
+    fun showBalance(uuid: UUID?) {
+        val p: OfflinePlayer? = Bukkit.getOfflinePlayer(uuid!!).player
         val money = getBalance(uuid)
-        p.player.sendMessage(ChatColor.YELLOW.toString() + "あなたの所持金は$" + money.toInt())
+        p!!.player!!.sendMessage(ChatColor.YELLOW.toString() + "あなたの所持金は" + money + "円です")
     }
 
     /////////////////////////////////////
     //      引き出し
     /////////////////////////////////////
-    fun withdraw(uuid: UUID, money: Double): Boolean? {
+    fun withdraw(uuid: UUID, money: Double): Boolean {
         val p = Bukkit.getOfflinePlayer(uuid)
-        if (p == null) {
-            Bukkit.getLogger().info(uuid.toString() + "は見つからない")
-            return false
-        }
         val resp = economy!!.withdrawPlayer(p, money)
         if (resp.transactionSuccess()) {
             if (p.isOnline) {
-                p.player.sendMessage(ChatColor.YELLOW.toString() + "$" + money.toInt() + "支払いました")
+                p.player!!.sendMessage(ChatColor.YELLOW.toString() + "電子マネー" + money + "円支払いました")
             }
             return true
         }
@@ -72,26 +63,41 @@ class VaultManager(private val plugin: JavaPlugin) {
     /////////////////////////////////////
     //      お金を入れる
     /////////////////////////////////////
-    fun deposit(uuid: UUID, money: Double): Boolean? {
+    fun deposit(uuid: UUID, money: Double): Boolean {
         val p = Bukkit.getOfflinePlayer(uuid)
-        if (p == null) {
-            Bukkit.getLogger().info(uuid.toString() + "は見つからない")
-
-            return false
-        }
         val resp = economy!!.depositPlayer(p, money)
         if (resp.transactionSuccess()) {
             if (p.isOnline) {
-                p.player.sendMessage(ChatColor.YELLOW.toString() + "$" + money.toInt() + "受取りました")
+                p.player!!.sendMessage(ChatColor.YELLOW.toString() + "電子マネー" + money + "円受取りました")
             }
             return true
         }
-
         return false
     }
 
-    companion object {
+    /////////////////////////////////////
+    //      引き出し
+    /////////////////////////////////////
+    fun silentWithdraw(uuid: UUID, money: Double): Boolean {
+        val p = Bukkit.getOfflinePlayer(uuid)
+        val resp = economy!!.withdrawPlayer(p, money)
+        return resp.transactionSuccess()
+    }
 
+    /////////////////////////////////////
+    //      お金を入れる
+    /////////////////////////////////////
+    fun silentDeposit(uuid: UUID, money: Double): Boolean {
+        val p = Bukkit.getOfflinePlayer(uuid)
+        val resp = economy!!.depositPlayer(p, money)
+        return resp.transactionSuccess()
+    }
+
+    companion object {
         var economy: Economy? = null
+    }
+
+    init {
+        setupEconomy()
     }
 }

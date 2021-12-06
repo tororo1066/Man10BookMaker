@@ -15,7 +15,7 @@ class SidebarDisplay {
      * コンストラクタ
      */
     init {
-        scoreboard = Bukkit.getScoreboardManager().newScoreboard
+        scoreboard = Bukkit.getScoreboardManager()?.newScoreboard!!
         val sidebar = scoreboard.registerNewObjective(OBJECTIVE_NAME, "dummy")
         sidebar.displaySlot = DisplaySlot.SIDEBAR
     }
@@ -35,7 +35,7 @@ class SidebarDisplay {
      * @param player プレイヤー
      */
     fun setMainScoreboard(player: Player) {
-        player.scoreboard = Bukkit.getScoreboardManager().mainScoreboard
+        player.scoreboard = Bukkit.getScoreboardManager()!!.mainScoreboard
     }
 
     /**
@@ -58,7 +58,7 @@ class SidebarDisplay {
      */
     fun setScore(name: String, point: Int) {
         val obj = scoreboard.getObjective(OBJECTIVE_NAME)
-        val score = obj.getScore(name)
+        val score = obj!!.getScore(name)
         if (point == 0) {
             score.score = 1 // NOTE: set temporary.
         }
@@ -73,7 +73,7 @@ class SidebarDisplay {
      */
     fun addScore(name: String, amount: Int) {
         val obj = scoreboard.getObjective(OBJECTIVE_NAME)
-        val score = obj.getScore(name)
+        val score = obj!!.getScore(name)
         val point = score.score
         score.score = point + amount
     }
@@ -83,7 +83,7 @@ class SidebarDisplay {
      */
     fun remove() {
         if (scoreboard.getObjective(DisplaySlot.SIDEBAR) != null) {
-            scoreboard.getObjective(DisplaySlot.SIDEBAR).unregister()
+            scoreboard.getObjective(DisplaySlot.SIDEBAR)!!.unregister()
         }
         scoreboard.clearSlot(DisplaySlot.SIDEBAR)
     }
@@ -98,7 +98,7 @@ class SidebarDisplay {
     }
 
     companion object {
-        private val OBJECTIVE_NAME = "MB"
+        private const val OBJECTIVE_NAME = "MB"
     }
 
 }
