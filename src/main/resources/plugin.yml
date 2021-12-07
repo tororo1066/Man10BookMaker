@@ -2,7 +2,11 @@ name: Man10BookMaker
 version: 0.1
 api-version: 1.17
 main: red.man10.BookMakerPlugin
-author: Shupro
+authors:
+   - Shupro
+   - tororo_1066
+softdepend:
+   - Man10Kit
 depend:
    - WorldGuard
 description: Man10 BookMaker Gambling system

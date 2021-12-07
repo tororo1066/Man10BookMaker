@@ -1,9 +1,6 @@
 package red.man10
 
-import org.bukkit.Bukkit
-import org.bukkit.Location
-import org.bukkit.Material
-import org.bukkit.Sound
+import org.bukkit.*
 import org.bukkit.configuration.file.FileConfiguration
 import org.bukkit.entity.Player
 import java.math.BigDecimal
@@ -390,7 +387,7 @@ class BookMakerGameManager {
                                                     " §r§e(オッズ: " + getOdds(pushingGame.players, fighter.key, pushingGame.tax, pushingGame.prize).roundTo2DecimalPlaces().toString() + "倍)")
                                             if (pushingGame.startingLocation != null) {
                                                 val location = pushingGame.startingLocation!!
-                                                val tpLocation = Location(location.world, location.x, location.y, location.z)
+                                                val tpLocation = Location(location.world, location.x, location.y, location.z,location.yaw,location.pitch)
                                                 tpLocation.add(xDifferenences[i - 1].toDouble(), 0.0, zDifferenences[i - 1].toDouble())
                                                 p.teleport(tpLocation)
                                             }
@@ -490,7 +487,7 @@ class BookMakerGameManager {
                                 bettingGame.prize
                             ).roundTo2DecimalPlaces().toString() + "倍)"
                         )
-                        pl.sidebar!!.showOdds(bettingGame)
+                        pl.sidebar.showOdds(bettingGame)
                     } else {
                         better.sendMessage(pl.prefix + "§4§lERROR: §f§l今はベットできません。")
                     }
@@ -498,7 +495,7 @@ class BookMakerGameManager {
                     if (bettingGame.status == GameStatus.BET) {
                         val newBet = Bet(better.uniqueId, price)
                         bettingGame.players[fighterUUID]!!.add(newBet)
-                        pl.vault!!.withdraw(better.uniqueId, price)
+                        pl.vault.withdraw(better.uniqueId, price)
                         Bukkit.broadcastMessage(
                             pl.prefix +
                                     "§6§l" + bettingGame.gameName +
@@ -591,7 +588,9 @@ class BookMakerGameManager {
 
         val total = fighterTotalPrice + otherTotalPrice
 
-        return ((1 - (tax + prize)) / (fighterTotalPrice / total))
+        val odds = ((1 - (tax + prize)) / (fighterTotalPrice / total))
+        if (odds < 1)return 1.00
+        return odds
 
     }
 
@@ -740,7 +739,7 @@ class BookMakerGameManager {
 
     fun resetPlayerStatus(p: Player) {
         p.fireTicks = 0
-        p.inventory.clear()
+        p.gameMode = GameMode.SURVIVAL
         if (p.hasPotionEffect(PotionEffectType.BLINDNESS)) {
             p.removePotionEffect(PotionEffectType.BLINDNESS)
         }

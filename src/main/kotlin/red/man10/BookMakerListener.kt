@@ -246,7 +246,7 @@ class BookMakerListener: Listener {
             if (e.getLine(0) == "bookmaker") {
                 if (pl.gameManager.loadedGames.keys.contains(e.getLine(1)!!)) {
                     e.setLine(3, e.getLine(1))
-                    e.setLine(0, "[§8§lmBookMaker§0§l]")
+                    e.setLine(0, "[mBookMaker]")
                     e.setLine(1, "§l" + pl.gameManager.loadedGames[e.getLine(1)!!]!!.gameName)
                     when (e.getLine(2)) {
                         "open" -> {
@@ -278,10 +278,10 @@ class BookMakerListener: Listener {
     fun onPlayerInteract(e: PlayerInteractEvent) {
         //print(e.clickedBlock)
         if (e.clickedBlock != null) {
-            if (e.clickedBlock!!.type == Material.OAK_SIGN) {
+            if (e.clickedBlock!!.state is Sign) {
                 val sign = e.clickedBlock!!.state as Sign
                 //print(sign.getLine(0))
-                if (sign.getLine(0) =="[mBookMaker]") {
+                if (sign.getLine(0).equals("[mBookMaker]", true)) {
                     //print(sign.getLine(2))
                     val gameId = sign.getLine(3)
                     if (!pl.isLocked) {
