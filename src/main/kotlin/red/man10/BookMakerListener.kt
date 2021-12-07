@@ -2,12 +2,9 @@ package red.man10
 
 import com.sk89q.worldedit.bukkit.BukkitAdapter
 import com.sk89q.worldedit.math.BlockVector3
-import com.sk89q.worldedit.world.World
-import com.sk89q.worldguard.WorldGuard
-import com.sk89q.worldguard.protection.regions.ProtectedRegion
 import org.bukkit.Bukkit
 import org.bukkit.Material
-import org.bukkit.block.Block
+import org.bukkit.block.Sign
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
@@ -15,7 +12,6 @@ import org.bukkit.event.block.SignChangeEvent
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryCloseEvent
 import org.bukkit.event.player.*
-import org.bukkit.block.Sign
 import java.util.*
 
 class BookMakerListener: Listener {
@@ -201,9 +197,12 @@ class BookMakerListener: Listener {
         if (e.player.world.name != "bookmaker") return
         val regions = pl.worldguard.get(BukkitAdapter.adapt(Bukkit.getWorld("bookmaker")))
             ?.getApplicableRegions(BlockVector3.at(e.player.location.x, e.player.location.y, e.player.location.z))?:return
-        for (region in regions) {
+
+        for (region in regions.regions) {
             for (gameID in gameIDs) {
+                Bukkit.broadcastMessage(region.id)
                 if ("mb_$gameID" != region.id) {
+                    Bukkit.broadcastMessage(gameID)
                     if (pl.gameManager.loadedGames[gameID]!!.status == GameStatus.FIGHT) {
                         if (pl.gameManager.loadedGames[gameID]!!.players.keys.contains(e.player.uniqueId)) {
                             pl.gameManager.endGame(gameID, e.player.uniqueId)

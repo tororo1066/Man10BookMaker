@@ -536,7 +536,7 @@ class BookMakerGameManager {
                     Bukkit.broadcastMessage(pl.prefix + "§f§l記録: §e§l" + endingGame.gameTimer.roundTo2DecimalPlaces() + "秒")
                     pl.data!!.saveFight(gameID, endingGame, winner) //SQL
                     endingGame.gameTimer = -1.0
-                    pl.vault!!.deposit(winner, prize)
+                    pl.vault.deposit(winner, prize)
                     val console = Bukkit.getServer().consoleSender
                     for (fighter in endingGame.players.keys) {
                         val command = "mkit pop " + Bukkit.getPlayer(fighter)?.name
@@ -581,8 +581,9 @@ class BookMakerGameManager {
             }
         }
 
-        otherTotalPrice *= (1 - (tax + prize))
-        return ((fighterTotalPrice + otherTotalPrice) / fighterTotalPrice)
+        val total = fighterTotalPrice + otherTotalPrice
+
+        return ((1 - (tax + prize)) / (fighterTotalPrice / total))
 
     }
 
@@ -610,7 +611,7 @@ class BookMakerGameManager {
                 for (fighter in game.players) {
                     for (bet in fighter.value) {
                         if (Bukkit.getPlayer(bet.playerUUID) != null) {
-                            pl.vault!!.deposit(bet.playerUUID, bet.price)
+                            pl.vault.deposit(bet.playerUUID, bet.price)
                             Bukkit.getPlayer(bet.playerUUID)?.sendMessage(pl.prefix + "§lベット金額が返金されました。")
                         }
                     }

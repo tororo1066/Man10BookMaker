@@ -84,29 +84,26 @@ class BookMakerPlugin: JavaPlugin() {
                     if (sender.world.name == "bookmaker") {
                         if (sender.hasPermission("mb.view")) {
                             sender.performCommand("spawn")
-                            return true
                         } else {
                             sender.sendMessage(prefix + "権限がありません。")
-                            return true
                         }
                     } else {
                         sender.sendMessage(prefix + "あなたは観戦していません。")
-                        return true
                     }
+                    return true
                 }
 
                 if (args[0] == "open" ){
                     if (!isLocked) {
                         if (args.size == 2) {
                             gameManager.openNewGame(args[1], sender)
-                            return true
                         } else {
                             sender.sendMessage(prefix + "コマンドの使用方法が間違っています。/mb help")
-                            return true
                         }
                     } else {
                         sender.sendMessage(prefix + "ブックメーカーは現在OFFになっています。")
                     }
+                    return true
                 }
                 if (args[0] == "help") {
                     showHelp(sender)

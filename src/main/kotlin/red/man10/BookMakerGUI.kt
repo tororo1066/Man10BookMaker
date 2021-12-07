@@ -59,13 +59,13 @@ class BookMakerGUI {
         val nolores: List<String> = ArrayList()
 
         for (place in redGlassPlaces) {
-            createItem(place, topMenu, Material.GLASS_PANE, 14, 1, "§c§l参加登録受付中§f§lのゲーム", nolores)
+            createItem(place, topMenu, Material.GLASS_PANE, 0, 1, "§c§l参加登録受付中§f§lのゲーム", nolores)
         }
         for (place in blueGlassPlaces) {
-            createItem(place, topMenu, Material.GLASS_PANE, 11, 1, "§9§lベット受付中§f§lのゲーム", nolores)
+            createItem(place, topMenu, Material.BLUE_STAINED_GLASS_PANE, 0, 1, "§9§lベット受付中§f§lのゲーム", nolores)
         }
         for (place in yellowGlassPlaces) {
-            createItem(place, topMenu, Material.GLASS_PANE, 4, 1, "§e§l試合中§f§lのゲーム", nolores)
+            createItem(place, topMenu, Material.YELLOW_STAINED_GLASS_PANE, 0, 1, "§e§l試合中§f§lのゲーム", nolores)
         }
         for (place in dividerPlaces) {
             createItem(place, topMenu, Material.IRON_BARS, 0, 1, " ", nolores)
