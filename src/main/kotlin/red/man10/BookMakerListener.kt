@@ -200,9 +200,7 @@ class BookMakerListener: Listener {
 
         for (region in regions.regions) {
             for (gameID in gameIDs) {
-                Bukkit.broadcastMessage(region.id)
                 if ("mb_$gameID" != region.id) {
-                    Bukkit.broadcastMessage(gameID)
                     if (pl.gameManager.loadedGames[gameID]!!.status == GameStatus.FIGHT) {
                         if (pl.gameManager.loadedGames[gameID]!!.players.keys.contains(e.player.uniqueId)) {
                             pl.gameManager.endGame(gameID, e.player.uniqueId)
@@ -248,20 +246,20 @@ class BookMakerListener: Listener {
             if (e.getLine(0) == "bookmaker") {
                 if (pl.gameManager.loadedGames.keys.contains(e.getLine(1)!!)) {
                     e.setLine(3, e.getLine(1))
-                    e.setLine(0, "§l[§8§lmBookMaker§0§l]")
+                    e.setLine(0, "[§8§lmBookMaker§0§l]")
                     e.setLine(1, "§l" + pl.gameManager.loadedGames[e.getLine(1)!!]!!.gameName)
                     when (e.getLine(2)) {
                         "open" -> {
-                            e.setLine(2, "§l[ゲーム起動]")
+                            e.setLine(2, "[ゲーム起動]")
                         }
                         "join" -> {
-                            e.setLine(2, "§l[試合に参加登録]")
+                            e.setLine(2, "[試合に参加登録]")
                         }
                         "bet" -> {
-                            e.setLine(2, "§l[ベット]")
+                            e.setLine(2, "[ベット]")
                         }
                         "view" -> {
-                            e.setLine(2, "§l[観戦]")
+                            e.setLine(2, "[観戦]")
                         }
                         else -> {
                             e.isCancelled = true
@@ -283,23 +281,23 @@ class BookMakerListener: Listener {
             if (e.clickedBlock!!.type == Material.OAK_SIGN) {
                 val sign = e.clickedBlock!!.state as Sign
                 //print(sign.getLine(0))
-                if (sign.getLine(0).equals("§l[§8§lmBookMaker§0§l]", true)) {
+                if (sign.getLine(0) =="[mBookMaker]") {
                     //print(sign.getLine(2))
                     val gameId = sign.getLine(3)
                     if (!pl.isLocked) {
                         when (sign.getLine(2)) {
-                            "§l[ゲーム起動]" -> {
+                            "[ゲーム起動]" -> {
                                 pl.gameManager.openNewGame(gameId, e.player)
                             }
-                            "§l[試合に参加登録]" -> {
+                            "[試合に参加登録]" -> {
                                 pl.gameManager.addCandidate(e.player, gameId)
                             }
-                            "§l[ベット]" -> {
+                            "[ベット]" -> {
                                 if (e.player.hasPermission("mb.bet")) {
                                     pl.gui.openPlayerSelectMenu(e.player, gameId)
                                 }
                             }
-                            "§l[観戦]" -> {
+                            "[観戦]" -> {
                                 pl.gameManager.viewTeleport(gameId, e.player)
                             }
                         }

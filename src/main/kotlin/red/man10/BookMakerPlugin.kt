@@ -22,12 +22,14 @@ class BookMakerPlugin: JavaPlugin() {
     val gameManager = BookMakerGameManager().returnGameManager(this)
     val listener = BookMakerListener().returnListener(this)
     val configManager = BookMakerConfigManager().returnConfigManager(this)
-    var sidebar: BookMakerSidebar? = null
+    lateinit var sidebar: BookMakerSidebar
     var data: BookMakerData? = null // = BookMakerData().returnData(this)
 
     var isLocked = true
 
     lateinit var vault : VaultManager
+
+    var lobbyLocation = config.getLocation("lobbyLocation")
 
     val prefix = "§l[§a§lm§6§lBookMaker§f§l]§r "
 
@@ -50,7 +52,7 @@ class BookMakerPlugin: JavaPlugin() {
     }
 
     override fun onDisable() {
-        sidebar!!.removeAll()
+        sidebar.removeAll()
         for (gameID in gameManager.runningGames.keys) {
             gameManager.stopGame(gameID)
         }
@@ -72,18 +74,20 @@ class BookMakerPlugin: JavaPlugin() {
                 }
             } else {
                 if (args[0] == "view") {
+                    if (args.size == 1){
+                        sender.sendMessage("$prefix/mb view <ゲーム名>")
+                    }
                     if (gameManager.runningGames[args[1]] == null) {
                         sender.sendMessage(prefix + "ゲームが存在しません。")
-                        return true
                     } else {
                         gameManager.viewTeleport(args[1], sender)
-                        return true
                     }
+                    return true
                 }
                 if (args[0] == "return") {
                     if (sender.world.name == "bookmaker") {
                         if (sender.hasPermission("mb.view")) {
-                            sender.performCommand("spawn")
+                            sender.teleport(lobbyLocation?:return true)
                         } else {
                             sender.sendMessage(prefix + "権限がありません。")
                         }
@@ -93,7 +97,7 @@ class BookMakerPlugin: JavaPlugin() {
                     return true
                 }
 
-                if (args[0] == "open" ){
+                if (args[0] == "open"){
                     if (!isLocked) {
                         if (args.size == 2) {
                             gameManager.openNewGame(args[1], sender)
@@ -114,6 +118,13 @@ class BookMakerPlugin: JavaPlugin() {
                     //OPコマンド
                         "reload" -> {
                             configManager.loadConfig(sender)
+                        }
+                        "setlobby"->{
+                            config.set("lobbyLocation",sender.location)
+                            lobbyLocation = sender.location
+                            saveConfig()
+                            sender.sendMessage("$prefix§aロビーを設定しました")
+                            return true
                         }
                         "list" -> {
                             sender.sendMessage(prefix + "§6現在" + gameManager.loadedGames.size + "個のゲームがロードされています。")
@@ -252,13 +263,14 @@ class BookMakerPlugin: JavaPlugin() {
         sender.sendMessage("§a/mb off §7ブックメーカーをロックする。")
         sender.sendMessage("§a/mb on §7ブックメーカーをアンロックする。")
         sender.sendMessage("§a/mb view <ゲームid> §7観戦場所にtpする (一般人使用可能)")
-        sender.sendMessage("§a/mb view <ゲームid> §7ブックメーカーロビーにtpする (一般人使用可能)")
+        sender.sendMessage("§a/mb return §7ブックメーカーロビーにtpする (一般人使用可能)")
         sender.sendMessage("")
         sender.sendMessage("§6《ポイント管理系》")
         sender.sendMessage("§a/mb setfighterspawn <ゲームid> §7立っているところを選手のスポーンポイントにする")
-        sender.sendMessage("§a/mb setviewerspawn <ゲームid> §7立っているところを選手のスポーンポイントにする")
+        sender.sendMessage("§a/mb setviewerspawn <ゲームid> §7立っているところを観戦者のスポーンポイントにする")
+        sender.sendMessage("§a/mb setlobby §7立っているところをロビーのスポーン位置にする")
         sender.sendMessage(" ")
-        sender.sendMessage("§6Ver 1.0  Made by Shupro")
+        sender.sendMessage("§6Ver 2.0  Made by Shupro (Refactor tororo_1066)")
         sender.sendMessage("§f§l=====================")
     }
 
