@@ -22,7 +22,7 @@ data class Game(var gameName: String,
                 var duration: MutableList<Int>,
 
                 var status: GameStatus,
-                var players:  MutableMap<UUID, MutableList<Bet>>,//AnyはUUIDかStringが入る
+                var players:  MutableMap<UUID, MutableList<Bet>>,
                 var candidates: MutableList<UUID>,
                 var gameTimer: Double,
                 var virtualBet : Int)
@@ -40,8 +40,8 @@ class BookMakerGameManager {
 
     val console = Bukkit.getServer().consoleSender
 
-    val xDifferenences = mutableListOf<Int>(-1, 0, 1, -1, 0, 1, -1, 0, 1, -1, 0, 1)
-    val zDifferenences = mutableListOf<Int>(0, 0, 0, 1, -1, 1, 0, 0, 0, 1, -1, 1)
+    val xDifferenences = mutableListOf(-1, 0, 1, -1, 0, 1, -1, 0, 1, -1, 0, 1)
+    val zDifferenences = mutableListOf(0, 0, 0, 1, -1, 1, 0, 0, 0, 1, -1, 1)
 
     companion object {
         lateinit var pl: BookMakerPlugin
@@ -284,6 +284,28 @@ class BookMakerGameManager {
         }
     }
 
+    fun removeCandidate(p : Player, gameID: String){
+        if (p.hasPermission("mb.join")) {
+            if (runningGames[gameID] == null) {
+                p.sendMessage(pl.prefix + "§4§lERROR: §f§lゲームが存在しません。")
+            } else {
+                if (runningGames[gameID]!!.status == GameStatus.JOIN) {
+                    if (!runningGames[gameID]!!.candidates.contains(p.uniqueId)) {
+                        p.sendMessage(pl.prefix + "§4§lERROR: §f§lあなたはこのゲームに参加していません！")
+                    } else {
+                        runningGames[gameID]!!.candidates.remove(p.uniqueId)
+                        p.sendMessage(pl.prefix + "§6§l" + runningGames[gameID]!!.gameName + "の参加登録を解除しました")
+                        pl.sidebar.showCandidates(runningGames[gameID]!!, gameID)
+                    }
+                } else {
+                    p.sendMessage(pl.prefix + "§l今は参加フェーズではありません。")
+                }
+            }
+        } else {
+            p.sendMessage(pl.prefix + "§l権限がありません。")
+        }
+    }
+
     //次のフェーズにゲームを進める
     fun pushPhase(gameID: String, player: Player) {
         if (runningGames[gameID] != null) {
@@ -308,14 +330,21 @@ class BookMakerGameManager {
                                         otherGame.candidates.remove(uuid)
                                     }
                                 }
+                                pushingGame.candidates.remove(uuid)
 
                                 i++
                             }
+                            for (p in pushingGame.candidates){
+                                pl.vault.deposit(p,pushingGame.joinFee)
+                                Bukkit.getPlayer(p)?.sendMessage(pl.prefix + "§b選手に選ばれなかったので参加費が返却されました")
+                            }
+                            pushingGame.candidates.clear()
                             Bukkit.broadcastMessage(pl.prefix + "§f§l勝者を予想し、§6§l/mb§f§lでベットしましょう！")
                             pushingGame.status = GameStatus.BET
                             for (fighter in pushingGame.players) {
                                 val virtualBet = Bet(UUID.randomUUID(), pushingGame.virtualBet.toDouble())
                                 fighter.value.add(virtualBet)
+                                Bukkit.dispatchCommand(console, ("man10kit:mkit push " + Bukkit.getPlayer(fighter.key)?.name))
                             }
                             pl.sidebar.showOdds(pushingGame)
                             var timer = pushingGame.duration[1]
@@ -391,7 +420,6 @@ class BookMakerGameManager {
                                                 tpLocation.add(xDifferenences[i - 1].toDouble(), 0.0, zDifferenences[i - 1].toDouble())
                                                 p.teleport(tpLocation)
                                             }
-                                            Bukkit.dispatchCommand(console, ("man10kit:mkit push " + p.name))
                                             resetPlayerStatus(p)
                                             Bukkit.dispatchCommand(console, ("man10kit:mkit set " + p.name + " mb_" + gameID))
                                             pl.freezedPlayer.add(fighter.key)
@@ -616,6 +644,7 @@ class BookMakerGameManager {
             }
             else -> {
                 for (fighter in game.players) {
+                    pl.vault.deposit(fighter.key,game.joinFee)
                     for (bet in fighter.value) {
                         if (Bukkit.getPlayer(bet.playerUUID) != null) {
                             pl.vault.deposit(bet.playerUUID, bet.price)
@@ -623,6 +652,7 @@ class BookMakerGameManager {
                         }
                     }
                 }
+
                 if (game.status == GameStatus.FIGHT) {
                     val console = Bukkit.getServer().consoleSender
                     for (fighter in game.players.keys) {

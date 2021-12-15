@@ -9,6 +9,7 @@ import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.block.SignChangeEvent
+import org.bukkit.event.entity.EntityDamageEvent
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryCloseEvent
 import org.bukkit.event.player.*
@@ -40,7 +41,7 @@ class BookMakerListener: Listener {
     @EventHandler
     fun onInventoryClick(e: InventoryClickEvent) {
         for (game in pl.gameManager.runningGames.values) {
-            if (game.status == GameStatus.FIGHT) {
+            if (game.status == GameStatus.FIGHT || game.status == GameStatus.BET) {
                 if (game.players.keys.contains(e.whoClicked.uniqueId)){
                     e.isCancelled = true
                     e.whoClicked.sendMessage(pl.prefix + "試合中はインベントリは操作できません。")
@@ -61,7 +62,11 @@ class BookMakerListener: Listener {
                 when (pl.gameManager.runningGames[id]!!.status) {
                     GameStatus.JOIN -> {
                         if (player.hasPermission("mb.join")) {
-                            pl.gameManager.addCandidate(player, id)
+                            if (pl.gameManager.runningGames[id]!!.candidates.contains(player.uniqueId)){
+                                pl.gameManager.removeCandidate(player,id)
+                            }else{
+                                pl.gameManager.addCandidate(player, id)
+                            }
                             player.closeInventory()
                         } else {
                             player.sendMessage(pl.prefix + "権限がありません。")
@@ -168,14 +173,6 @@ class BookMakerListener: Listener {
                         Bukkit.broadcastMessage(pl.prefix + "§lプレイヤーが抜けたため、§6§l「" + i.value.gameName + "」§f§lが停止されました。")
                         pl.gameManager.stopGame(i.key)
                     }
-//                    for (betList in i.value.players.values) {
-//                        for (bet in betList) {
-//                            if (bet.playerUUID == e.player.uniqueId) {
-//                                betList.remove(bet)
-//                                pl!!.vault!!.deposit(bet.playerUUID, bet.price)
-//                            }
-//                        }
-//                    }
                 }
                 GameStatus.FIGHT -> {
                     if (i.value.players.keys.contains(uuid)){
@@ -191,7 +188,8 @@ class BookMakerListener: Listener {
     @EventHandler
     fun onPlayerMove(e: PlayerMoveEvent) {
         if (pl.freezedPlayer.contains(e.player.uniqueId)) {
-            e.player.teleport(e.from)
+            e.isCancelled = true
+            return
         }
         if (!hasBMWorld)return
         if (e.player.world.name != "bookmaker") return
@@ -217,7 +215,7 @@ class BookMakerListener: Listener {
     fun onCommandPreProcess(e: PlayerCommandPreprocessEvent) {
         if (e.player.isOp)return
         for (game in pl.gameManager.runningGames.values) {
-            if (game.status == GameStatus.FIGHT) {
+            if (game.status == GameStatus.FIGHT || game.status == GameStatus.BET) {
                 if (game.players.keys.contains(e.player.uniqueId)){
                     e.isCancelled = true
                     e.player.sendMessage(pl.prefix + "試合中はコマンドは使用できません。")
@@ -227,10 +225,22 @@ class BookMakerListener: Listener {
     }
 
     @EventHandler
+    fun onDamage(e: EntityDamageEvent) {
+        if (e.entity !is Player)return
+        for (game in pl.gameManager.runningGames.values) {
+            if (game.status == GameStatus.FIGHT || game.status == GameStatus.BET) {
+                if (game.players.keys.contains(e.entity.uniqueId)){
+                    e.isCancelled = true
+                }
+            }
+        }
+    }
+
+    @EventHandler
     fun onItemConsume(e: PlayerItemConsumeEvent) {
         if (e.item.type == Material.POTION || e.item.type == Material.SPLASH_POTION || e.item.type == Material.LINGERING_POTION) {
             for (game in pl.gameManager.runningGames.values) {
-                if (game.status == GameStatus.FIGHT) {
+                if (game.status == GameStatus.FIGHT || game.status == GameStatus.BET) {
                     if (game.players.keys.contains(e.player.uniqueId)){
                         e.isCancelled = true
                         e.player.sendMessage(pl.prefix + "試合中はポーションは使用できません。")
@@ -244,6 +254,11 @@ class BookMakerListener: Listener {
     fun onSignChange(e: SignChangeEvent) {
         if (e.player.hasPermission("mb.op")) {
             if (e.getLine(0) == "bookmaker") {
+                if (e.getLine(1) == "return"){
+                    e.setLine(0, "[mBookMaker]")
+                    e.setLine(2,"[ロビーに戻る]")
+                    return
+                }
                 if (pl.gameManager.loadedGames.keys.contains(e.getLine(1)!!)) {
                     e.setLine(3, e.getLine(1))
                     e.setLine(0, "[mBookMaker]")
@@ -254,6 +269,9 @@ class BookMakerListener: Listener {
                         }
                         "join" -> {
                             e.setLine(2, "[試合に参加登録]")
+                        }
+                        "leave"->{
+                            e.setLine(2,"[参加登録解除]")
                         }
                         "bet" -> {
                             e.setLine(2, "[ベット]")
@@ -286,11 +304,18 @@ class BookMakerListener: Listener {
                     val gameId = sign.getLine(3)
                     if (!pl.isLocked) {
                         when (sign.getLine(2)) {
+                            "[ロビーに戻る]"->{
+                                e.player.teleport(pl.lobbyLocation?:return)
+                                e.player.sendMessage(pl.prefix + "§bロビーに転送しました")
+                            }
                             "[ゲーム起動]" -> {
                                 pl.gameManager.openNewGame(gameId, e.player)
                             }
                             "[試合に参加登録]" -> {
                                 pl.gameManager.addCandidate(e.player, gameId)
+                            }
+                            "[参加登録解除]"->{
+                                pl.gameManager.removeCandidate(e.player,gameId)
                             }
                             "[ベット]" -> {
                                 if (e.player.hasPermission("mb.bet")) {

@@ -274,14 +274,4 @@ class BookMakerPlugin: JavaPlugin() {
         sender.sendMessage("§f§l=====================")
     }
 
-//    fun fixTpBug(tpedPlayer: Player) {
-//        for (player in Bukkit.getWorld(worldName).getPlayers()) {
-//            tpedPlayer.hidePlayer(player)
-//            player.hidePlayer(tpedPlayer)
-//        }
-//        for (player in Bukkit.getWorld(worldName).getPlayers()) {
-//            tpedPlayer.showPlayer(player)
-//            player.showPlayer(tpedPlayer)
-//        }
-//    }
 }

@@ -9,13 +9,12 @@ import org.bukkit.scoreboard.*
  */
 class SidebarDisplay {
 
-    private val scoreboard: Scoreboard
+    private val scoreboard: Scoreboard = Bukkit.getScoreboardManager()?.newScoreboard!!
 
     /**
      * コンストラクタ
      */
     init {
-        scoreboard = Bukkit.getScoreboardManager()?.newScoreboard!!
         val sidebar = scoreboard.registerNewObjective(OBJECTIVE_NAME, "dummy")
         sidebar.displaySlot = DisplaySlot.SIDEBAR
     }
