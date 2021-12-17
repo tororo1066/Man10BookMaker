@@ -91,7 +91,7 @@ class BookMakerGUI {
                     }
                 }
                 GameStatus.BET -> {
-                    val lore: List<String> = if (!pl.gameManager.UUIDMap.keys.contains(runningGame.value.players.keys.first())) {
+                    val lore: List<String> = if (!pl.gameManager.uuidMap.keys.contains(runningGame.value.players.keys.first())) {
                         mutableListOf(
                             "§eクリックでベット！",
                             "§f勝つと思う方に賭けて、配当金を受け取ろう！",
@@ -133,7 +133,7 @@ class BookMakerGUI {
             if (pl.gameManager.runningGames[gameId]!!.status == GameStatus.BET) {
                 val players = pl.gameManager.runningGames[gameId]!!.players.keys
                 if (players.size <= 6) {
-                    if (!pl.gameManager.UUIDMap.keys.contains(players.first())) {
+                    if (!pl.gameManager.uuidMap.keys.contains(players.first())) {
                         val playerSelectMenu = Bukkit.getServer().createInventory(null, 9, "§0§l[§7§lm§8§lBookMaker§0§l] §r§l勝者を予想してベット!")
                         for ((i, place) in fighterPlaces[players.size - 1].withIndex()) {
                             //createItem(place, playerSelectMenu, Material.STICK, 0, 1, "i", listOf())
@@ -151,7 +151,7 @@ class BookMakerGUI {
                         val playerSelectMenu = Bukkit.getServer().createInventory(null, 9, "§0§l[§7§lm§8§lBookMaker§0§l] §r§l正解を予想してベット!")
                         for ((i, place) in fighterPlaces[players.size - 1].withIndex()) {
                             //createItem(place, playerSelectMenu, Material.STICK, 0, 1, "i", listOf())
-                            val selectionText: String = pl.gameManager.UUIDMap[players.toList()[i]]!!
+                            val selectionText: String = pl.gameManager.uuidMap[players.toList()[i]]!!
                             val dataLore = listOf(
                                     "§eクリックでベット!",
                                     "§8id: " + (players.toMutableList()[i]),

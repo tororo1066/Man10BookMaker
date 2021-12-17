@@ -8,6 +8,8 @@ import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
 import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 enum class GameStatus {
     OFF,
@@ -16,16 +18,27 @@ enum class GameStatus {
     FIGHT
 }
 
+enum class MBGameMode {
+    NORMAL,
+    WHITELIST,
+}
+
 class BookMakerPlugin: JavaPlugin() {
 
     val gui = BookMakerGUI().returnGUI(this)
     val gameManager = BookMakerGameManager().returnGameManager(this)
     val listener = BookMakerListener().returnListener(this)
-    val configManager = BookMakerConfigManager().returnConfigManager(this)
+    private val configManager = BookMakerConfigManager().returnConfigManager(this)
+    val createGameManager = HashMap<UUID,Int>()
+    val createGameManagerData = HashMap<UUID,Pair<String,Game>>()
     lateinit var sidebar: BookMakerSidebar
     var data: BookMakerData? = null // = BookMakerData().returnData(this)
 
     var isLocked = true
+
+    var mode = MBGameMode.NORMAL
+
+    val whitelist = ArrayList<UUID>()
 
     lateinit var vault : VaultManager
 
@@ -46,6 +59,12 @@ class BookMakerPlugin: JavaPlugin() {
         worldguard = WorldGuard.getInstance().platform.regionContainer
 
         configManager.loadConfig(null)
+
+        isLocked = !config.getBoolean("enable")
+
+        config.getStringList("whitelist").forEach {
+            whitelist.add(UUID.fromString(it))
+        }
 
         sidebar = BookMakerSidebar().returnSidebar(this)
         data = BookMakerData().returnData(this)
@@ -100,7 +119,16 @@ class BookMakerPlugin: JavaPlugin() {
                 if (args[0] == "open"){
                     if (!isLocked) {
                         if (args.size == 2) {
-                            gameManager.openNewGame(args[1], sender)
+                            if (mode == MBGameMode.WHITELIST){
+                                if (whitelist.contains(sender.uniqueId) || sender.isOp){
+                                    gameManager.openNewGame(args[1], sender)
+                                } else {
+                                    sender.sendMessage(prefix + "ホワイトリストに入っていません。")
+                                    return true
+                                }
+                            } else {
+                                gameManager.openNewGame(args[1], sender)
+                            }
                         } else {
                             sender.sendMessage(prefix + "コマンドの使用方法が間違っています。/mb help")
                         }
@@ -116,6 +144,108 @@ class BookMakerPlugin: JavaPlugin() {
                 if (sender.hasPermission("mb.op")) {
                     when (args[0]) {
                     //OPコマンド
+                        "creategame"->{
+                            createGameManager[sender.uniqueId] = 0
+                            createGameManagerData[sender.uniqueId] = Pair("", Game())
+                            sender.sendMessage(prefix + "ゲーム名を入力してください。")
+                            sender.sendMessage(prefix + "取り消す場合は「cancel」と入力してください。")
+                        }
+
+                        "removegame"->{
+                            if (args.size != 2){
+                                sender.sendMessage(prefix + "コマンドの使用方法が間違っています。/mb help")
+                                return true
+                            }
+                            if (!config.isSet(args[1])){
+                                sender.sendMessage(prefix + "ゲームが存在しません。")
+                                return true
+                            }
+
+                            config.set(args[1],null)
+                            saveConfig()
+                            sender.sendMessage(prefix + "ゲームを削除しました。")
+                            return true
+                        }
+
+                        "addwhitelist","awl","addlist"->{
+                            if (args.size != 2){
+                                sender.sendMessage(prefix + "コマンドの使用方法が間違っています。/mb help")
+                                return true
+                            }
+
+                            val player = Bukkit.getPlayer(args[1])
+                            if (player == null){
+                                sender.sendMessage(prefix + "プレイヤーが存在しません オンラインのプレイヤーを指定してください")
+                                return true
+                            }
+
+                            if (whitelist.contains(player.uniqueId)){
+                                sender.sendMessage(prefix + "既に追加済みです")
+                                return true
+                            }
+
+                            whitelist.add(player.uniqueId)
+                            val list = config.getStringList("whitelist")
+                            list.add(player.uniqueId.toString())
+                            config.set("whitelist",list)
+                            saveConfig()
+                            sender.sendMessage(prefix + "${args[1]}を追加しました")
+
+                        }
+
+                        "removewhitelist","rwl","removelist"->{
+                            if (args.size != 2){
+                                sender.sendMessage(prefix + "コマンドの使用方法が間違っています。/mb help")
+                                return true
+                            }
+
+                            val player = Bukkit.getOfflinePlayer(args[1])
+                            if (player.name == null){
+                                sender.sendMessage(prefix + "プレイヤーが存在しません オンラインのプレイヤーを指定してください")
+                                return true
+                            }
+
+                            if (!whitelist.contains(player.uniqueId)){
+                                sender.sendMessage(prefix + "ホワイトリストに追加されていません！")
+                                return true
+                            }
+
+                            whitelist.remove(player.uniqueId)
+                            val list = config.getStringList("whitelist")
+                            list.remove(player.uniqueId.toString())
+                            config.set("whitelist",list)
+                            saveConfig()
+                            sender.sendMessage(prefix + "${args[1]}を削除しました")
+                        }
+
+                        "whitelist","wl"->{
+                            sender.sendMessage(prefix + "ホワイトリストに入っているプレイヤー")
+                            whitelist.forEach {
+                                sender.sendMessage(Bukkit.getOfflinePlayer(it).name)
+                            }
+                        }
+
+                        "mode"->{
+                            if (args.size != 2){
+                                sender.sendMessage(prefix + "コマンドの使用方法が間違っています。/mb help")
+                                return true
+                            }
+                            if (!listOf("normal","whitelist").contains(args[1])){
+                                sender.sendMessage(prefix + "モードが存在しません")
+                            }
+                            val mode = when(args[1]){
+                                "normal"-> MBGameMode.NORMAL
+                                "whitelist"-> MBGameMode.WHITELIST
+                                else -> MBGameMode.NORMAL
+                            }
+
+                            this.mode = mode
+                            for (game in gameManager.runningGames){
+                                gameManager.stopGame(game.key)
+                            }
+                            sender.sendMessage(prefix + "モードを${args[1]}にしました")
+                        }
+
                         "reload" -> {
                             configManager.loadConfig(sender)
                         }
@@ -167,7 +297,7 @@ class BookMakerPlugin: JavaPlugin() {
                                     if (Bukkit.getPlayer(args[2]) != null) {
                                         Bukkit.getPlayer(args[2])?.let { gameManager.endGame(args[1], it.uniqueId) }
                                     } else {
-                                        if (gameManager.UUIDMap.keys.contains(gameManager.runningGames[args[1]]!!.players.keys.toList()[0])) {
+                                        if (gameManager.uuidMap.keys.contains(gameManager.runningGames[args[1]]!!.players.keys.toList()[0])) {
                                             if (args[2].toIntOrNull() == null) {
                                                 sender.sendMessage("$prefix§4§lERROR: §f§l選択肢の番号を入力してください。")
                                             } else {
@@ -215,10 +345,14 @@ class BookMakerPlugin: JavaPlugin() {
                         }
                         "off" -> {
                             isLocked = true
+                            config.set("enable",false)
+                            saveConfig()
                             sender.sendMessage(prefix + "OFFにしました。")
                         }
                         "on" -> {
                             isLocked = false
+                            config.set("enable",true)
+                            saveConfig()
                             sender.sendMessage(prefix + "ONにしました。")
                         }
 
@@ -264,6 +398,12 @@ class BookMakerPlugin: JavaPlugin() {
         sender.sendMessage("§a/mb on §7ブックメーカーをアンロックする。")
         sender.sendMessage("§a/mb view <ゲームid> §7観戦場所にtpする (一般人使用可能)")
         sender.sendMessage("§a/mb return §7ブックメーカーロビーにtpする (一般人使用可能)")
+        sender.sendMessage("§a/mb mode (normal or whitelist) §7ブックメーカーのモードを変える")
+        sender.sendMessage("§a/mb awl <プレイヤー名> §7ホワイトリストにプレイヤーを追加する")
+        sender.sendMessage("§a/mb rwl <プレイヤー名> §7ホワイトリストからプレイヤーを削除する")
+        sender.sendMessage("§a/mb list §7ホワイトリストにいるプレイヤーを確認する")
+        sender.sendMessage("§a/mb creategame §7ゲームを作成する")
+        sender.sendMessage("§a/mb removegame <ゲームid> §7ゲームを削除する")
         sender.sendMessage("")
         sender.sendMessage("§6《ポイント管理系》")
         sender.sendMessage("§a/mb setfighterspawn <ゲームid> §7立っているところを選手のスポーンポイントにする")

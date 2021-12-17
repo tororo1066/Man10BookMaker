@@ -9,3 +9,14 @@ athletic:
   time1: 30
   time2: 30
   time3: 120
+
+mysql:
+  host: localhost
+  port: 3306
+  user: root
+  pass: pass
+  db: bookmaker
+
+enable: true
+
+whitelist:

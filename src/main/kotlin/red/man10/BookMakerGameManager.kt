@@ -20,12 +20,13 @@ data class Game(var gameName: String,
                 var startingLocation: Location?,
                 var viewingLocation: Location?,
                 var duration: MutableList<Int>,
-
                 var status: GameStatus,
                 var players:  MutableMap<UUID, MutableList<Bet>>,
                 var candidates: MutableList<UUID>,
                 var gameTimer: Double,
-                var virtualBet : Int)
+                var virtualBet : Int){
+    constructor() : this("",Material.STONE,0,0.0,0.0,0.0,null,null, mutableListOf(),GameStatus.OFF, mutableMapOf(), mutableListOf(),0.0,0)
+}
 
 data class Bet(val playerUUID: UUID,
                val price: Double)
@@ -36,7 +37,7 @@ class BookMakerGameManager {
 
     var runningGames = mutableMapOf<String, Game>()
 
-    var UUIDMap = mutableMapOf<UUID, String>()
+    var uuidMap = mutableMapOf<UUID, String>()
 
     val console = Bukkit.getServer().consoleSender
 
@@ -61,7 +62,7 @@ class BookMakerGameManager {
         pl.listener.hasBMWorld = (Bukkit.getWorld("bookmaker") != null)
 
         for (gameKey in keys) {
-            if (!listOf("mysql","lobbyLocation").contains(gameKey)) {
+            if (!listOf("mysql","lobbyLocation","enable").contains(gameKey)) {
                 //gameに不備がないか確認
                 //FLAG
                 if (config.getKeys(true).containsAll(listOf("$gameKey.name", "$gameKey.playerNumber", "$gameKey.item", "$gameKey.joinFee", "$gameKey.tax", "$gameKey.prize","$gameKey.virtualBet"))) {
@@ -258,6 +259,12 @@ class BookMakerGameManager {
                         if (pl.vault.getBalance(p.uniqueId) < runningGames[gameID]!!.joinFee) {
                             p.sendMessage(pl.prefix + "§4§lERROR: §f§l参加費が足りません！")
                         } else {
+                            if (pl.mode == MBGameMode.WHITELIST){
+                                if (!pl.whitelist.contains(p.uniqueId)){
+                                    p.sendMessage(pl.prefix + "§4§lERROR: §f§l現在ホワイトリスト制です！")
+                                    return
+                                }
+                            }
                             var isFighter = false
                             for (game in runningGames.values) {
                                 if (game.players.keys.contains(p.uniqueId)) {
@@ -385,7 +392,7 @@ class BookMakerGameManager {
                 }
 
                 GameStatus.BET -> {//試合に進む
-                    if (!UUIDMap.keys.contains(pushingGame.players.keys.toList()[0])) {
+                    if (!uuidMap.keys.contains(pushingGame.players.keys.toList()[0])) {
                         pushingGame.status = GameStatus.FIGHT
                         Bukkit.broadcastMessage(pl.prefix + "§6§l" + pushingGame.gameName + " §f§lベット終了!")
                         Bukkit.broadcastMessage(pl.prefix + "§e§lまもなく試合が始まります...")
@@ -496,7 +503,7 @@ class BookMakerGameManager {
             if (bettingGame.players.keys.contains(better.uniqueId)) {
                 better.sendMessage(pl.prefix + "§4§lERROR: §f§l選手はベットできません。")
             } else {
-                if (!UUIDMap.keys.contains(bettingGame.players.keys.toList()[0])) {
+                if (!uuidMap.keys.contains(bettingGame.players.keys.toList()[0])) {
                     if (bettingGame.status == GameStatus.BET) {
                         val newBet = Bet(better.uniqueId, price)
                         bettingGame.players[fighterUUID]!!.add(newBet)
@@ -528,7 +535,7 @@ class BookMakerGameManager {
                             pl.prefix +
                                     "§6§l" + bettingGame.gameName +
                                     "§f§lで§e§l" + better.name +
-                                    "§f§lが§d§l" + UUIDMap[fighterUUID] +
+                                    "§f§lが§d§l" + uuidMap[fighterUUID] +
                                     "§f§lに§a§l" + price +
                                     "円§f§lベットしました! " +
                                     "§e§l(オッズ: " + getOdds(
@@ -551,15 +558,15 @@ class BookMakerGameManager {
     fun endGame(gameID: String, winner: UUID) {
         if (runningGames[gameID] != null) {
             val endingGame = runningGames[gameID]!!
-            if (endingGame.status == GameStatus.FIGHT || UUIDMap.keys.contains(endingGame.players.keys.toList()[0])) {
+            if (endingGame.status == GameStatus.FIGHT || uuidMap.keys.contains(endingGame.players.keys.toList()[0])) {
                 val winnerBetters = endingGame.players[winner]
                 val odds = getOdds(endingGame.players, winner, endingGame.tax, endingGame.prize)
                 val prize = getTotalPrice(endingGame.players) * endingGame.prize
-                if (UUIDMap.keys.contains(endingGame.players.keys.toList()[0])) {
+                if (uuidMap.keys.contains(endingGame.players.keys.toList()[0])) {
                     Bukkit.broadcastMessage(pl.prefix +
                             "§6§l" + endingGame.gameName + " §f§l結果発表!" + "  §e§lオッズ: " + getOdds(endingGame.players, winner, endingGame.tax, endingGame.prize).roundTo2DecimalPlaces() + "倍")
                     Bukkit.broadcastMessage(pl.prefix +
-                            "§c§l正解: " + UUIDMap[winner])
+                            "§c§l正解: " + uuidMap[winner])
                 } else {
                     Bukkit.broadcastMessage(pl.prefix +
                             "§6§l" + endingGame.gameName + " §f§l試合終了!" + "  §e§lオッズ: " + getOdds(endingGame.players, winner, endingGame.tax, endingGame.prize).roundTo2DecimalPlaces() + "倍")
@@ -735,8 +742,8 @@ class BookMakerGameManager {
     fun openNewQ(gameID: String, question: String, s1: String, s2: String) {
         val s1UUID = UUID.randomUUID()
         val s2UUID = UUID.randomUUID()
-        UUIDMap[s1UUID] = s1
-        UUIDMap[s2UUID] = s2
+        uuidMap[s1UUID] = s1
+        uuidMap[s2UUID] = s2
         //FLAG
         val openingGame = Game(
             "Q: $question",

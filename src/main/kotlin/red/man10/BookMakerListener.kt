@@ -10,6 +10,7 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.block.SignChangeEvent
 import org.bukkit.event.entity.EntityDamageEvent
+import org.bukkit.event.entity.FoodLevelChangeEvent
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryCloseEvent
 import org.bukkit.event.player.*
@@ -332,6 +333,190 @@ class BookMakerListener: Listener {
                 }
             }
         }
+    }
+
+    @EventHandler
+    fun onDrop(e : PlayerDropItemEvent){
+        for (game in pl.gameManager.runningGames.values) {
+            if (game.status == GameStatus.FIGHT || game.status == GameStatus.BET) {
+                if (game.players.keys.contains(e.player.uniqueId)){
+                    e.isCancelled = true
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    fun onFoodLevelChange(e : FoodLevelChangeEvent){
+        for (game in pl.gameManager.runningGames.values) {
+            if (game.status == GameStatus.FIGHT || game.status == GameStatus.BET) {
+                if (game.players.keys.contains(e.entity.uniqueId)){
+                    e.isCancelled = true
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    fun onChat(e : AsyncPlayerChatEvent){
+        if (!pl.createGameManager.containsKey(e.player.uniqueId))return
+        val p = e.player
+        e.isCancelled = true
+        if (e.message == "cancel"){
+            pl.createGameManager.remove(e.player.uniqueId)
+            pl.createGameManagerData.remove(e.player.uniqueId)
+            p.sendMessage(pl.prefix + "キャンセルしました。")
+            return
+        }
+        val number = pl.createGameManager[e.player.uniqueId]!!
+        val data = pl.createGameManagerData[e.player.uniqueId]!!.second
+        when(number){
+            0->{
+                data.gameName = e.message
+                p.sendMessage(pl.prefix + "ゲーム名を「§a${e.message}§r」にしました。")
+                p.sendMessage(pl.prefix + "次に参加人数を入力してください。")
+            }
+
+            1->{
+                if (e.message.toIntOrNull() == null){
+                    p.sendMessage(pl.prefix + "数字で入力してください！")
+                    return
+                }
+                data.playerNumber = e.message.toInt()
+                p.sendMessage(pl.prefix + "参加人数を「§a${e.message.toInt()}人§r」にしました。")
+                p.sendMessage(pl.prefix + "次にアイテム名を入力してください。")
+            }
+
+            2->{
+                val material = Material.getMaterial(e.message)
+                if (material == null){
+                    p.sendMessage(pl.prefix + "そのアイテム名は存在しません！")
+                    return
+                }
+                data.item = material
+                p.sendMessage(pl.prefix + "アイテムを「§a${e.message}§r」にしました。")
+                p.sendMessage(pl.prefix + "次にbetが選手に行く倍率を入力してください。")
+            }
+
+            3->{
+                if (e.message.toDoubleOrNull() == null){
+                    p.sendMessage(pl.prefix + "実数で入力してください！")
+                    return
+                }
+                data.prize = e.message.toDouble()
+                p.sendMessage(pl.prefix + "betが選手に行く倍率を「§a${e.message.toDouble()}§r」にしました。")
+                p.sendMessage(pl.prefix + "次に税の倍率を入力してください。")
+            }
+
+            4->{
+                if (e.message.toDoubleOrNull() == null){
+                    p.sendMessage(pl.prefix + "実数で入力してください！")
+                    return
+                }
+                data.tax = e.message.toDouble()
+                p.sendMessage(pl.prefix + "税の倍率を「§a${e.message.toDouble()}§r」にしました。")
+                p.sendMessage(pl.prefix + "次に最初に1人1人の選手に自動で賭けられる金額を入力してください。")
+            }
+
+            5->{
+                if (e.message.toIntOrNull() == null){
+                    p.sendMessage(pl.prefix + "数字で入力してください！")
+                    return
+                }
+                data.virtualBet = e.message.toInt()
+                p.sendMessage(pl.prefix + "最初に1人1人の選手に自動で賭けられる金額を「§a${e.message.toInt()}円§r」にしました。")
+                p.sendMessage(pl.prefix + "次に募集中の時間を入力してください。")
+            }
+
+            6->{
+                if (e.message.toIntOrNull() == null){
+                    p.sendMessage(pl.prefix + "数字で入力してください！")
+                    return
+                }
+                data.duration.add(e.message.toInt())
+                p.sendMessage(pl.prefix + "募集中の時間を「§a${e.message.toInt()}秒§r」にしました。")
+                p.sendMessage(pl.prefix + "次にbetの時間を入力してください。")
+            }
+
+            7->{
+                if (e.message.toIntOrNull() == null){
+                    p.sendMessage(pl.prefix + "数字で入力してください！")
+                    return
+                }
+                data.duration.add(e.message.toInt())
+                p.sendMessage(pl.prefix + "betの時間を「§a${e.message.toInt()}秒§r」にしました。")
+                p.sendMessage(pl.prefix + "次に試合の時間を入力してください。")
+            }
+
+            8->{
+                if (e.message.toIntOrNull() == null){
+                    p.sendMessage(pl.prefix + "数字で入力してください！")
+                    return
+                }
+                data.duration.add(e.message.toInt())
+                p.sendMessage(pl.prefix + "試合の時間を「§a${e.message.toInt()}秒§r」にしました。")
+                p.sendMessage(pl.prefix + "次に参加費を入力してください。")
+            }
+
+            9->{
+                if (e.message.toDoubleOrNull() == null){
+                    p.sendMessage(pl.prefix + "実数で入力してください！")
+                    return
+                }
+                data.joinFee = e.message.toDouble()
+                p.sendMessage(pl.prefix + "参加費を「§a${e.message.toDouble()}円§r」にしました。")
+                p.sendMessage(pl.prefix + "最後にゲーム名(内部名)を入力してください。")
+            }
+
+            10->{
+                if (e.message.contains(" ")){
+                    p.sendMessage(pl.prefix + "空白を含めないでください！")
+                    return
+                }
+                pl.createGameManagerData[e.player.uniqueId] = Pair(e.message,data)
+                p.sendMessage(pl.prefix + "ゲーム名(内部名)を「§a${e.message}§r」にしました。")
+                p.sendMessage(pl.prefix + "確認")
+                p.sendMessage(" ")
+                p.sendMessage(pl.prefix + "ゲーム名：${data.gameName}")
+                p.sendMessage(pl.prefix + "参加人数：${data.playerNumber}人")
+                p.sendMessage(pl.prefix + "アイテム：${data.item.name}")
+                p.sendMessage(pl.prefix + "betが選手に行く倍率：${data.prize}倍")
+                p.sendMessage(pl.prefix + "税の倍率：${data.tax}倍")
+                p.sendMessage(pl.prefix + "最初に1人1人の選手に自動で賭けられる金額：${data.virtualBet}円")
+                p.sendMessage(pl.prefix + "募集中の時間：${data.duration[0]}秒")
+                p.sendMessage(pl.prefix + "betの時間：${data.duration[1]}秒")
+                p.sendMessage(pl.prefix + "試合の時間：${data.duration[2]}秒")
+                p.sendMessage(pl.prefix + "参加費：${data.joinFee}円")
+                p.sendMessage(pl.prefix + "ゲーム名(内部名)：${e.message}")
+                p.sendMessage(" ")
+                p.sendMessage(pl.prefix + "確認ができたら「confirm」と入力してください。")
+            }
+
+            11->{
+                if (e.message != "confirm"){
+                    p.sendMessage(pl.prefix + "取り消す場合は「cancel」と入力してください。")
+                    return
+                }
+                val key = pl.createGameManagerData[e.player.uniqueId]!!.first
+                pl.config.set("$key.name",data.gameName)
+                pl.config.set("$key.playerNumber",data.playerNumber)
+                pl.config.set("$key.item",data.item.name)
+                pl.config.set("$key.joinFee",data.joinFee)
+                pl.config.set("$key.tax",data.tax)
+                pl.config.set("$key.prize",data.prize)
+                pl.config.set("$key.virtualBet",data.virtualBet)
+                pl.config.set("$key.time1",data.duration[0])
+                pl.config.set("$key.time2",data.duration[1])
+                pl.config.set("$key.time3",data.duration[2])
+                pl.saveConfig()
+                pl.createGameManager.remove(p.uniqueId)
+                pl.createGameManagerData.remove(p.uniqueId)
+                p.sendMessage(pl.prefix + "ゲームのデータが作成されました！")
+                return
+            }
+        }
+
+        pl.createGameManager[e.player.uniqueId] = number+1
     }
 }
 
