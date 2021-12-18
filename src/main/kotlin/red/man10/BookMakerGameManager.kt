@@ -325,6 +325,7 @@ class BookMakerGameManager {
                             pushingGame.candidates.shuffle()
                             var i = 1
                             for (uuid in pushingGame.candidates.take(pushingGame.playerNumber)) {
+                                Bukkit.getPlayer(uuid)?.closeInventory()
                                 pushingGame.players[uuid] = mutableListOf()
                                 if (pl.data!!.getBestRecord(gameID, uuid) != null) {
                                     Bukkit.broadcastMessage(pl.prefix + "§c§lP" + i + ": §f§l" + Bukkit.getPlayer(uuid)?.name + " §e§l最高記録: " + pl.data!!.getBestRecord(gameID, uuid) + "秒")
@@ -341,13 +342,16 @@ class BookMakerGameManager {
 
                                 i++
                             }
+                            pushingGame.status = GameStatus.BET
+                            if (pl.mode == MBGameMode.FREE){
+
+                            }
                             for (p in pushingGame.candidates){
                                 pl.vault.deposit(p,pushingGame.joinFee)
                                 Bukkit.getPlayer(p)?.sendMessage(pl.prefix + "§b選手に選ばれなかったので参加費が返却されました")
                             }
                             pushingGame.candidates.clear()
                             Bukkit.broadcastMessage(pl.prefix + "§f§l勝者を予想し、§6§l/mb§f§lでベットしましょう！")
-                            pushingGame.status = GameStatus.BET
                             for (fighter in pushingGame.players) {
                                 val virtualBet = Bet(UUID.randomUUID(), pushingGame.virtualBet.toDouble())
                                 fighter.value.add(virtualBet)

@@ -337,12 +337,9 @@ class BookMakerListener: Listener {
 
     @EventHandler
     fun onDrop(e : PlayerDropItemEvent){
-        for (game in pl.gameManager.runningGames.values) {
-            if (game.status == GameStatus.FIGHT || game.status == GameStatus.BET) {
-                if (game.players.keys.contains(e.player.uniqueId)){
-                    e.isCancelled = true
-                }
-            }
+        if (e.player.world.name == "bookmaker"){
+            e.player.sendMessage(pl.prefix + "bookmakerワールドではアイテムを捨てられません！")
+            e.isCancelled = true
         }
     }
 

@@ -21,6 +21,8 @@ enum class GameStatus {
 enum class MBGameMode {
     NORMAL,
     WHITELIST,
+    PRO,
+    FREE
 }
 
 class BookMakerPlugin: JavaPlugin() {
