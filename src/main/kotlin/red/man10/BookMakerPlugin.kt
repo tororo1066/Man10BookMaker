@@ -54,6 +54,8 @@ class BookMakerPlugin: JavaPlugin() {
 
     var lobbyLocation : Location? = null
 
+    var limitGame = 99
+
     val prefix = "§l[§a§lm§6§lBookMaker§f§l]§r "
 
     lateinit var worldguard: RegionContainer
@@ -73,6 +75,8 @@ class BookMakerPlugin: JavaPlugin() {
         isLocked = !config.getBoolean("enable")
 
         lobbyLocation = config.getLocation("lobbyLocation")
+
+        limitGame = config.getInt("limitGame",99)
 
         config.getStringList("whitelist").forEach {
             whitelist.add(UUID.fromString(it))
@@ -253,7 +257,7 @@ class BookMakerPlugin: JavaPlugin() {
 
                             val player = Bukkit.getOfflinePlayer(args[1])
                             if (player.name == null){
-                                sender.sendMessage(prefix + "プレイヤーが存在しません オンラインのプレイヤーを指定してください")
+                                sender.sendMessage(prefix + "プレイヤーが存在しません")
                                 return true
                             }
 
@@ -275,6 +279,29 @@ class BookMakerPlugin: JavaPlugin() {
                             whitelist.forEach {
                                 sender.sendMessage(Bukkit.getOfflinePlayer(it).name)
                             }
+                        }
+
+                        "limit"->{
+                            if (args.size != 2){
+                                sender.sendMessage(prefix + "コマンドの使用方法が間違っています。/mb help")
+                                return true
+                            }
+
+                            val limit = args[0].toIntOrNull()
+
+                            if (limit == null){
+                                sender.sendMessage(prefix + "コマンドの使用方法が間違っています。/mb help")
+                                return true
+                            }
+
+                            config.set("limitGame",limit)
+                            saveConfig()
+
+                            limitGame = limit
+
+                            sender.sendMessage(prefix + "§b最大ゲーム開催数を${limit}にしました")
+                            return true
+
                         }
 
                         "mode"->{
@@ -454,6 +481,7 @@ class BookMakerPlugin: JavaPlugin() {
         sender.sendMessage("§a/mb awl <プレイヤー名> §7ホワイトリストにプレイヤーを追加する")
         sender.sendMessage("§a/mb rwl <プレイヤー名> §7ホワイトリストからプレイヤーを削除する")
         sender.sendMessage("§a/mb whitelist §7ホワイトリストにいるプレイヤーを確認する")
+        sender.sendMessage("§a/mb limit <数> §7ゲーム同時開催数を制限する")
         sender.sendMessage("§a/mb creategame §7ゲームを作成する")
         sender.sendMessage("§a/mb removegame <ゲームid> §7ゲームを削除する")
         sender.sendMessage("")
@@ -466,7 +494,7 @@ class BookMakerPlugin: JavaPlugin() {
         sender.sendMessage("§a/mb log §7試合数、勝利数、敗北数、勝率を見る")
         sender.sendMessage("§a/mb ranking <ゲームid> レコードのランキングを見る")
         sender.sendMessage(" ")
-        sender.sendMessage("§6Ver 2.0  Made by Shupro (Refactor tororo_1066)")
+        sender.sendMessage("§6Ver 2.1  Made by Shupro (Refactor tororo_1066)")
         sender.sendMessage("§f§l=====================")
     }
 

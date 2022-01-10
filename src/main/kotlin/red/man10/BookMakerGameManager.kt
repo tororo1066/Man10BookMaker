@@ -191,6 +191,9 @@ class BookMakerGameManager {
                 if (runningGames.keys.contains(id)) {
                     p.sendMessage(pl.prefix + "§4§lERROR: §f§l指定されたゲームはすでに開いています。")
                 } else {
+                    if (runningGames.keys.size >= pl.limitGame){
+                        p.sendMessage(pl.prefix + "§4§lERROR: §f§lゲームは同時に${pl.limitGame}個までしか開けません。")
+                    }
                     openingGame.candidates = mutableListOf()
                     openingGame.players = mutableMapOf()
                     openingGame.status = GameStatus.JOIN
@@ -501,7 +504,7 @@ class BookMakerGameManager {
 
                 GameStatus.FIGHT -> {
                     player.sendMessage(pl.prefix + "§4§lERROR: §f§l次のフェーズがありません。")
-                    player.sendMessage(pl.prefix + "試合終了まで待つか、/mb stopで強制終了してください。")
+                    player.sendMessage(pl.prefix + "試合終了まで待つか、/mb forcestopで強制終了してください。")
                 }
 
                 else -> {
