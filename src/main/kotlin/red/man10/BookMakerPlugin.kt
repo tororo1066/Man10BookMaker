@@ -3,6 +3,7 @@ package red.man10
 import com.sk89q.worldguard.WorldGuard
 import com.sk89q.worldguard.protection.regions.RegionContainer
 import org.bukkit.Bukkit
+import org.bukkit.Location
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
@@ -10,6 +11,7 @@ import org.bukkit.plugin.java.JavaPlugin
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
+import kotlin.math.floor
 
 enum class GameStatus {
     OFF,
@@ -34,7 +36,7 @@ class BookMakerPlugin: JavaPlugin() {
     val createGameManager = HashMap<UUID,Int>()
     val createGameManagerData = HashMap<UUID,Pair<String,Game>>()
     lateinit var sidebar: BookMakerSidebar
-    var data: BookMakerData? = null // = BookMakerData().returnData(this)
+    lateinit var data: BookMakerData // = BookMakerData().returnData(this)
 
     var isLocked = true
 
@@ -44,7 +46,13 @@ class BookMakerPlugin: JavaPlugin() {
 
     lateinit var vault : VaultManager
 
-    var lobbyLocation = config.getLocation("lobbyLocation")
+    fun worldMsg(message : String){
+        (Bukkit.getWorld("bookmaker")?:return).players.forEach {
+            it.sendMessage(message)
+        }
+    }
+
+    var lobbyLocation : Location? = null
 
     val prefix = "§l[§a§lm§6§lBookMaker§f§l]§r "
 
@@ -63,6 +71,8 @@ class BookMakerPlugin: JavaPlugin() {
         configManager.loadConfig(null)
 
         isLocked = !config.getBoolean("enable")
+
+        lobbyLocation = config.getLocation("lobbyLocation")
 
         config.getStringList("whitelist").forEach {
             whitelist.add(UUID.fromString(it))
@@ -143,6 +153,46 @@ class BookMakerPlugin: JavaPlugin() {
                     showHelp(sender)
                     return true
                 }
+
+                if (args[0] == "log"){
+                    Bukkit.getScheduler().runTaskAsynchronously(this, Runnable {
+                        val log = data.getLog(sender.uniqueId)
+                        if (log == null){
+                            sender.sendMessage(prefix + "データの取得に失敗しました。")
+                            return@Runnable
+                        }
+
+                        sender.sendMessage(prefix + "§e試合数：${log.first}")
+                        sender.sendMessage(prefix + "§a勝利数：${log.second}")
+                        sender.sendMessage(prefix + "§b敗北数：${log.first-log.second}")
+                        sender.sendMessage(prefix + "§d勝率：${floor((log.second.toDouble()/log.first.toDouble()) * 100)}%")
+                        return@Runnable
+                    })
+                    return true
+                }
+
+                if (args[0] == "ranking"){
+                    if (args.size != 2){
+                        sender.sendMessage(prefix + "コマンドの使用方法が間違っています。/mb help")
+                        return true
+                    }
+                    Bukkit.getScheduler().runTaskAsynchronously(this, Runnable {
+                        val ranking = data.getBestRecordRanking(args[1])
+                        if (ranking.isEmpty()){
+                            sender.sendMessage(prefix + "データの取得に失敗しました。")
+                            return@Runnable
+                        }
+
+                        sender.sendMessage("§a${gameManager.loadedGames[args[1]]?.gameName}のレコードランキング")
+                        for ((i,rank) in ranking.withIndex()){
+                            sender.sendMessage("§7§l${i+1}.§b${rank.key}：§e${rank.value}秒")
+                        }
+                    })
+                    return true
+
+
+                }
+
                 if (sender.hasPermission("mb.op")) {
                     when (args[0]) {
                     //OPコマンド
@@ -403,7 +453,7 @@ class BookMakerPlugin: JavaPlugin() {
         sender.sendMessage("§a/mb mode (normal or whitelist) §7ブックメーカーのモードを変える")
         sender.sendMessage("§a/mb awl <プレイヤー名> §7ホワイトリストにプレイヤーを追加する")
         sender.sendMessage("§a/mb rwl <プレイヤー名> §7ホワイトリストからプレイヤーを削除する")
-        sender.sendMessage("§a/mb list §7ホワイトリストにいるプレイヤーを確認する")
+        sender.sendMessage("§a/mb whitelist §7ホワイトリストにいるプレイヤーを確認する")
         sender.sendMessage("§a/mb creategame §7ゲームを作成する")
         sender.sendMessage("§a/mb removegame <ゲームid> §7ゲームを削除する")
         sender.sendMessage("")
@@ -411,6 +461,10 @@ class BookMakerPlugin: JavaPlugin() {
         sender.sendMessage("§a/mb setfighterspawn <ゲームid> §7立っているところを選手のスポーンポイントにする")
         sender.sendMessage("§a/mb setviewerspawn <ゲームid> §7立っているところを観戦者のスポーンポイントにする")
         sender.sendMessage("§a/mb setlobby §7立っているところをロビーのスポーン位置にする")
+        sender.sendMessage(" ")
+        sender.sendMessage("§6《その他》")
+        sender.sendMessage("§a/mb log §7試合数、勝利数、敗北数、勝率を見る")
+        sender.sendMessage("§a/mb ranking <ゲームid> レコードのランキングを見る")
         sender.sendMessage(" ")
         sender.sendMessage("§6Ver 2.0  Made by Shupro (Refactor tororo_1066)")
         sender.sendMessage("§f§l=====================")

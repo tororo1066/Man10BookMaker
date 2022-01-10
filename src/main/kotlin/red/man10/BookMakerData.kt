@@ -3,6 +3,7 @@ package red.man10
 import org.bukkit.Bukkit
 import java.math.BigDecimal
 import java.util.*
+import kotlin.collections.HashMap
 
 class BookMakerData {
 
@@ -97,17 +98,41 @@ class BookMakerData {
     }
 
     fun getBestRecord(gameId: String, uuid: UUID): Double? {
-        val rs = mysql.query("SELECT * FROM fights JOIN fighters ON fights .winner_id = fighters .id WHERE uuid = '" + uuid.toString() + "' AND game_id = '$gameId';")
+        val rs = mysql.query("SELECT * FROM fights JOIN fighters ON fights .winner_id = fighters .id WHERE uuid = '$uuid' AND game_id = '$gameId';")
         val records = mutableListOf<Double>()
         while (rs.next()) {
             records.add(rs.getDouble("record"))
         }
+        rs.close()
         mysql.close()
         return if (records.count() == 0) {
             null
         } else {
             records.min()
         }
+    }
+
+    fun getLog(uuid: UUID): Pair<Int, Int>? {
+        val rs = mysql.query("SELECT COUNT(*) FROM fights JOIN fighters ON fights .winner_id = fighters .id WHERE uuid = '$uuid';")
+        val rs2 = mysql.query("SELECT COUNT(*) FROM fighters WHERE uuid = '$uuid';")
+        val battle : Int
+        val win : Int
+        if (rs.next() && rs2.next()){
+            battle = rs2.getInt(1)
+            win = rs.getInt(1)
+            return Pair(battle,win)
+        }
+        return null
+    }
+
+    fun getBestRecordRanking(gameId: String): List<MutableMap.MutableEntry<String, Double>> {
+        val rs = mysql.query("SELECT * FROM fights JOIN fighters ON fights .winner_id = fighters .id WHERE game_id = '$gameId' ORDER BY record ASC LIMIT 10;")
+        val recordRankingList = HashMap<String,Double>()
+        while (rs.next()){
+            recordRankingList[rs.getString("name")] = rs.getDouble("record")
+        }
+
+        return recordRankingList.entries.sortedBy { it.value }
     }
 
     private var betsTable = "CREATE TABLE IF NOT EXISTS`bets` (\n" +

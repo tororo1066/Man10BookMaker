@@ -17,7 +17,7 @@ import java.util.logging.Level;
 public class MySQLManager {
 
     public  Boolean debugMode = false;
-    private JavaPlugin plugin;
+    private final JavaPlugin plugin;
     private String HOST = null;
     private String DB = null;
     private String USER = null;
@@ -26,7 +26,7 @@ public class MySQLManager {
     private boolean connected = false;
     private Statement st = null;
     private Connection con = null;
-    private String conName;
+    private final String conName;
     private MySQLFunc MySQL;
 
     ////////////////////////////////
@@ -63,7 +63,7 @@ public class MySQLManager {
     public void commit(){
         try{
             this.con.commit();
-        }catch (Exception e){
+        }catch (Exception ignored){
 
         }
     }
@@ -93,7 +93,7 @@ public class MySQLManager {
         }
 
         this.MySQL.close(this.con);
-        return Boolean.valueOf(this.connected);
+        return this.connected;
     }
 
     ////////////////////////////////
@@ -101,7 +101,7 @@ public class MySQLManager {
     ////////////////////////////////
     public int countRows(String table) {
         int count = 0;
-        ResultSet set = this.query(String.format("SELECT * FROM %s", new Object[]{table}));
+        ResultSet set = this.query(String.format("SELECT * FROM %s", table));
 
         try {
             while(set.next()) {
@@ -168,7 +168,7 @@ public class MySQLManager {
         ResultSet rs = null;
         if(this.con == null){
             Bukkit.getLogger().info("failed to open MYSQL");
-            return rs;
+            return null;
         }
 
         if (debugMode){

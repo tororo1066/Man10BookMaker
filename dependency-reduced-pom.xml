@@ -116,6 +116,6 @@
   </dependencies>
   <properties>
     <kotlin.version>1.5.31</kotlin.version>
-    <jdk.version>1.8</jdk.version>
+    <jdk.version>16</jdk.version>
   </properties>
 </project>
