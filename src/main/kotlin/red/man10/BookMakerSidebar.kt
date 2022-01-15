@@ -52,8 +52,8 @@ class BookMakerSidebar {
         sideBar.setScore("§lゲーム: §a§l" + game.gameName, 9)
         sideBar.setScore("§l参加応募者:", 9)
         for (candidate in game.candidates) {
-            if (BookMakerGameManager.pl.data!!.getBestRecord(gameId, candidate) != null) {
-                sideBar.setScore("§c§l" + Bukkit.getPlayer(candidate)?.name + " §e§l最高記録: " + pl.data!!.getBestRecord(gameId, candidate).toString() + "秒", 7)
+            if (BookMakerGameManager.pl.data.getBestRecord(gameId, candidate) != null) {
+                sideBar.setScore("§c§l" + Bukkit.getPlayer(candidate)?.name + " §e§l最高記録: " + pl.data.getBestRecord(gameId, candidate).toString() + "秒", 7)
             } else {
                 sideBar.setScore("§c§l" + Bukkit.getPlayer(candidate)?.name + " §e§l記録無し", 7)
             }

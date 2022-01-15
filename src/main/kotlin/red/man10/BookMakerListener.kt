@@ -515,5 +515,6 @@ class BookMakerListener: Listener {
 
         pl.createGameManager[e.player.uniqueId] = number+1
     }
+
 }
 

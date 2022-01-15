@@ -287,7 +287,7 @@ class BookMakerPlugin: JavaPlugin() {
                                 return true
                             }
 
-                            val limit = args[0].toIntOrNull()
+                            val limit = args[1].toIntOrNull()
 
                             if (limit == null){
                                 sender.sendMessage(prefix + "コマンドの使用方法が間違っています。/mb help")
