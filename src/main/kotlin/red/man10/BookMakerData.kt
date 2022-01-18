@@ -4,6 +4,7 @@ import org.bukkit.Bukkit
 import java.math.BigDecimal
 import java.util.*
 import kotlin.collections.HashMap
+import kotlin.collections.LinkedHashMap
 
 class BookMakerData {
 
@@ -127,10 +128,12 @@ class BookMakerData {
 
     fun getBestRecordRanking(gameId: String): List<MutableMap.MutableEntry<String, Double>> {
         val rs = mysql.query("SELECT * FROM fights JOIN fighters ON fights .winner_id = fighters .id WHERE game_id = '$gameId' ORDER BY record ASC LIMIT 10;")
-        val recordRankingList = HashMap<String,Double>()
+        val recordRankingList = LinkedHashMap<String,Double>()
         while (rs.next()){
+            if (recordRankingList.containsKey(rs.getString("name")))continue
             recordRankingList[rs.getString("name")] = rs.getDouble("record")
         }
+        rs.close()
 
         return recordRankingList.entries.sortedBy { it.value }
     }

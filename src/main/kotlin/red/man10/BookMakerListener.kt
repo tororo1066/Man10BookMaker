@@ -171,13 +171,13 @@ class BookMakerListener: Listener {
                 }
                 GameStatus.BET -> {
                     if (i.value.players.keys.contains(uuid)){
-                        Bukkit.broadcastMessage(pl.prefix + "§lプレイヤーが抜けたため、§6§l「" + i.value.gameName + "」§f§lが停止されました。")
+                        pl.worldMsg(pl.prefix + "§lプレイヤーが抜けたため、§6§l「" + i.value.gameName + "」§f§lが停止されました。")
                         pl.gameManager.stopGame(i.key)
                     }
                 }
                 GameStatus.FIGHT -> {
                     if (i.value.players.keys.contains(uuid)){
-                        Bukkit.broadcastMessage(pl.prefix + "§lプレイヤーが抜けたため、§6§l「" + i.value.gameName + "」§f§lが停止されました。")
+                        pl.worldMsg(pl.prefix + "§lプレイヤーが抜けたため、§6§l「" + i.value.gameName + "」§f§lが停止されました。")
                         pl.gameManager.stopGame(i.key)
                     }
                 }
@@ -208,6 +208,16 @@ class BookMakerListener: Listener {
                 }
             }
         }
+    }
+
+    @EventHandler
+    fun onWorldChange(e : PlayerChangedWorldEvent){
+        val data = pl.gameManager.runningGames.entries.find { it.value.players.containsKey(e.player.uniqueId) } ?: return
+        if (e.player.world.name != "bookmaker"){
+            pl.worldMsg(pl.prefix + "§lプレイヤーがワールドから抜けたため、§6§l「" + data.value.gameName + "」§f§lが停止されました。")
+            pl.gameManager.stopGame(data.key)
+        }
+
     }
 
         //以下不正対策
@@ -462,7 +472,7 @@ class BookMakerListener: Listener {
                 }
                 data.joinFee = e.message.toDouble()
                 p.sendMessage(pl.prefix + "参加費を「§a${e.message.toDouble()}円§r」にしました。")
-                p.sendMessage(pl.prefix + "最後にゲーム名(内部名)を入力してください。")
+                p.sendMessage(pl.prefix + "次にゲーム名(内部名)を入力してください。")
             }
 
             10->{
@@ -472,6 +482,17 @@ class BookMakerListener: Listener {
                 }
                 pl.createGameManagerData[e.player.uniqueId] = Pair(e.message,data)
                 p.sendMessage(pl.prefix + "ゲーム名(内部名)を「§a${e.message}§r」にしました。")
+                p.sendMessage(pl.prefix + "最後にゲーム開始時のコマンドを/無しで入力してください。(「no」でスルー出来ます。)")
+            }
+
+            11->{
+                if (e.message != "no"){
+                    data.commands.add(e.message)
+                    p.sendMessage(pl.prefix + "コマンド「§a${e.message}§r」を追加しました。")
+                    p.sendMessage(pl.prefix + "最後にゲーム開始時のコマンドを/無しで入力してください。(「no」でスルー出来ます。)")
+                    return
+                }
+
                 p.sendMessage(pl.prefix + "確認")
                 p.sendMessage(" ")
                 p.sendMessage(pl.prefix + "ゲーム名：${data.gameName}")
@@ -484,12 +505,15 @@ class BookMakerListener: Listener {
                 p.sendMessage(pl.prefix + "betの時間：${data.duration[1]}秒")
                 p.sendMessage(pl.prefix + "試合の時間：${data.duration[2]}秒")
                 p.sendMessage(pl.prefix + "参加費：${data.joinFee}円")
-                p.sendMessage(pl.prefix + "ゲーム名(内部名)：${e.message}")
+                p.sendMessage(pl.prefix + "ゲーム名(内部名)：${pl.createGameManagerData[e.player.uniqueId]!!.first}")
+                data.commands.forEach {
+                    p.sendMessage(pl.prefix + "コマンド：${it}")
+                }
                 p.sendMessage(" ")
                 p.sendMessage(pl.prefix + "確認ができたら「confirm」と入力してください。")
             }
 
-            11->{
+            12->{
                 if (e.message != "confirm"){
                     p.sendMessage(pl.prefix + "取り消す場合は「cancel」と入力してください。")
                     return
@@ -505,6 +529,7 @@ class BookMakerListener: Listener {
                 pl.config.set("$key.time1",data.duration[0])
                 pl.config.set("$key.time2",data.duration[1])
                 pl.config.set("$key.time3",data.duration[2])
+                pl.config.set("$key.commands",data.commands)
                 pl.saveConfig()
                 pl.createGameManager.remove(p.uniqueId)
                 pl.createGameManagerData.remove(p.uniqueId)

@@ -10,6 +10,7 @@ import org.bukkit.inventory.meta.ItemMeta
 import java.nio.file.Files.setOwner
 import org.bukkit.inventory.meta.SkullMeta
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.nio.file.Files.list
 import java.util.*
 
@@ -64,6 +65,7 @@ class BookMakerSidebar {
 
     private fun showToAll() {
         for (player in Bukkit.getServer().onlinePlayers) {
+            if (pl.hidePlayer.contains(player.uniqueId))continue
             sideBar.setMainScoreboard(player)
             sideBar.setShowPlayer(player)
 
@@ -88,6 +90,6 @@ class BookMakerSidebar {
         sideBar.remove()
     }
 
-    private fun Double.roundTo2DecimalPlaces() = BigDecimal(this).setScale(2, BigDecimal.ROUND_HALF_UP).toDouble()
+    private fun Double.roundTo2DecimalPlaces() = BigDecimal(this).setScale(2, RoundingMode.HALF_UP).toDouble()
 }
 

@@ -8,6 +8,7 @@ import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
+import org.bukkit.scoreboard.DisplaySlot
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -43,6 +44,10 @@ class BookMakerPlugin: JavaPlugin() {
     var mode = MBGameMode.NORMAL
 
     val whitelist = ArrayList<UUID>()
+
+    val blacklist = ArrayList<UUID>()
+
+    val hidePlayer = ArrayList<UUID>()
 
     lateinit var vault : VaultManager
 
@@ -108,9 +113,22 @@ class BookMakerPlugin: JavaPlugin() {
                     sender.sendMessage("権限がありません。")
                 }
             } else {
+                if (args[0] == "hide"){
+                    hidePlayer.add(sender.uniqueId)
+                    sender.scoreboard.clearSlot(DisplaySlot.SIDEBAR)
+                    sender.sendMessage(prefix + "hideしました。")
+                    return true
+                }
+
+                if (args[0] == "show"){
+                    hidePlayer.remove(sender.uniqueId)
+                    sender.sendMessage(prefix + "showしました。")
+                    return true
+                }
                 if (args[0] == "view") {
                     if (args.size == 1){
                         sender.sendMessage("$prefix/mb view <ゲーム名>")
+                        return true
                     }
                     if (gameManager.runningGames[args[1]] == null) {
                         sender.sendMessage(prefix + "ゲームが存在しません。")
@@ -492,7 +510,9 @@ class BookMakerPlugin: JavaPlugin() {
         sender.sendMessage(" ")
         sender.sendMessage("§6《その他》")
         sender.sendMessage("§a/mb log §7試合数、勝利数、敗北数、勝率を見る")
-        sender.sendMessage("§a/mb ranking <ゲームid> レコードのランキングを見る")
+        sender.sendMessage("§a/mb ranking <ゲームid> §7レコードのランキングを見る")
+        sender.sendMessage("§a/mb hide §7sideberを非表示にする")
+        sender.sendMessage("§a/mb show §7sideberを表示する")
         sender.sendMessage(" ")
         sender.sendMessage("§6Ver 2.1  Made by Shupro (Refactor tororo_1066)")
         sender.sendMessage("§f§l=====================")

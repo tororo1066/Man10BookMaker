@@ -243,7 +243,7 @@ class BookMakerGUI {
     }
 
     private fun createSkull(username: String, itemName: String, gui: Inventory, place: Int, lore: List<String>) {
-        val skull = ItemStack(Material.PLAYER_HEAD, 1, 3.toShort())
+        val skull = ItemStack(Material.PLAYER_HEAD, 1)
         val meta = skull.itemMeta as SkullMeta
         meta.setDisplayName(itemName)
         meta.owningPlayer = Bukkit.getOfflinePlayer(username)

@@ -9,6 +9,7 @@ import java.math.BigDecimal
 import java.util.*
 import org.bukkit.potion.PotionEffectType
 import org.bukkit.scheduler.BukkitRunnable
+import java.math.RoundingMode
 import kotlin.math.floor
 
 
@@ -26,8 +27,10 @@ data class Game(var gameName: String,
                 var players:  MutableMap<UUID, MutableList<Bet>>,
                 var candidates: MutableList<UUID>,
                 var gameTimer: Double,
-                var virtualBet : Int){
-    constructor() : this("",Material.STONE,0,0.0,0.0,0.0,null,null, mutableListOf(),GameStatus.OFF, mutableMapOf(), mutableListOf(),0.0,0)
+                var virtualBet : Int,
+                var commands : MutableList<String>){
+    constructor() : this("",Material.STONE,0,0.0,0.0,0.0,null,null, mutableListOf(),GameStatus.OFF, mutableMapOf(), mutableListOf(),0.0,0,
+        mutableListOf())
 }
 
 data class Bet(val playerUUID: UUID,
@@ -64,7 +67,7 @@ class BookMakerGameManager {
         pl.listener.hasBMWorld = (Bukkit.getWorld("bookmaker") != null)
 
         for (gameKey in keys) {
-            if (!listOf("mysql","lobbyLocation","enable","whitelist").contains(gameKey)) {
+            if (!listOf("mysql","lobbyLocation","enable","whitelist","limitGame","blacklist").contains(gameKey)) {
                 //gameに不備がないか確認
                 //FLAG
                 if (config.getKeys(true).containsAll(listOf("$gameKey.name", "$gameKey.playerNumber", "$gameKey.item", "$gameKey.joinFee", "$gameKey.tax", "$gameKey.prize","$gameKey.virtualBet"))) {
@@ -138,7 +141,8 @@ class BookMakerGameManager {
                                 mutableMapOf(),
                                 mutableListOf(),
                                 0.0,
-                                config.getInt("$gameKey.virtualBet")
+                                config.getInt("$gameKey.virtualBet"),
+                                config.getStringList("$gameKey.commands")
                             )
                         }?.let {
                             newGames.put(
@@ -161,6 +165,7 @@ class BookMakerGameManager {
                         changingGame.viewingLocation = viewLocation
                         changingGame.duration = durationList
                         changingGame.virtualBet = config.getInt("$gameKey.virtualBet")
+                        changingGame.commands = config.getStringList("$gameKey.commands")
                         newGames[gameKey] = changingGame
                         print(changingGame)
                     }
@@ -193,14 +198,15 @@ class BookMakerGameManager {
                 } else {
                     if (runningGames.keys.size >= pl.limitGame){
                         p.sendMessage(pl.prefix + "§4§lERROR: §f§lゲームは同時に${pl.limitGame}個までしか開けません。")
+                        return
                     }
                     openingGame.candidates = mutableListOf()
                     openingGame.players = mutableMapOf()
                     openingGame.status = GameStatus.JOIN
                     runningGames[id] = openingGame
                     p.sendMessage(pl.prefix + "ゲーム「" + id + "」を開きました")
-                    Bukkit.broadcastMessage(pl.prefix + "§6§l" + openingGame.gameName + "§f§lがオープンしました。")
-                    Bukkit.broadcastMessage(pl.prefix + "§6§l/mb§f§lで参加しよう！")
+                    pl.worldMsg(pl.prefix + "§6§l" + openingGame.gameName + "§f§lがオープンしました。")
+                    pl.worldMsg(pl.prefix + "§6§l/mb§f§lで参加しよう！")
                     pl.sidebar.showCandidates(openingGame, id)
                     var timer = openingGame.duration[0]
                     object : BukkitRunnable() {
@@ -211,7 +217,7 @@ class BookMakerGameManager {
                                     if (openingGame.candidates.size >= openingGame.playerNumber) {
                                         pushPhase(id, p)
                                     } else {
-                                        Bukkit.broadcastMessage(pl.prefix + "§l時間切れで§a§l" + openingGame.gameName + "§f§lが終了されました。")
+                                        pl.worldMsg(pl.prefix + "§l時間切れで§a§l" + openingGame.gameName + "§f§lが終了されました。")
                                         stopGame(id)
                                     }
                                 }
@@ -277,6 +283,7 @@ class BookMakerGameManager {
                                 }
                             }
                             if (!isFighter) {
+                                p.playSound(p.location,Sound.ENTITY_PLAYER_LEVELUP,1f,2f)
                                 runningGames[gameID]!!.candidates.add(p.uniqueId)
                                 p.sendMessage(pl.prefix + "§6§l" + runningGames[gameID]!!.gameName + "に参加登録されました。")
                                 p.sendMessage(pl.prefix + "§l抽選で選ばれると試合に参加できます")
@@ -305,6 +312,7 @@ class BookMakerGameManager {
                     if (!runningGames[gameID]!!.candidates.contains(p.uniqueId)) {
                         p.sendMessage(pl.prefix + "§4§lERROR: §f§lあなたはこのゲームに参加していません！")
                     } else {
+                        p.playSound(p.location,Sound.UI_BUTTON_CLICK,1f,1f)
                         runningGames[gameID]!!.candidates.remove(p.uniqueId)
                         p.sendMessage(pl.prefix + "§6§l" + runningGames[gameID]!!.gameName + "の参加登録を解除しました")
                         pl.sidebar.showCandidates(runningGames[gameID]!!, gameID)
@@ -331,6 +339,16 @@ class BookMakerGameManager {
                             var i = 1
                             for (uuid in pushingGame.candidates.take(pushingGame.playerNumber)) {
                                 Bukkit.getPlayer(uuid)?.closeInventory()
+                                if (Bukkit.getPlayer(uuid)?.world?.name != "bookmaker"){
+                                    val lobby = pl.lobbyLocation
+                                    if (lobby == null){
+                                        Bukkit.getLogger().warning("lobbylocが設定されていません。増殖の恐れがあります。")
+                                    }else{
+                                        Bukkit.getPlayer(uuid)?.teleport(lobby)
+                                    }
+
+                                }
+                                Bukkit.getPlayer(uuid)?.location?.let { Bukkit.getPlayer(uuid)?.playSound(it,Sound.BLOCK_ANVIL_PLACE,1f,1f) }
                                 pushingGame.players[uuid] = mutableListOf()
                                 if (pl.data.getBestRecord(gameID, uuid) != null) {
                                     pl.worldMsg(pl.prefix + "§c§lP" + i + ": §f§l" + Bukkit.getPlayer(uuid)?.name + " §e§l最高記録: " + pl.data.getBestRecord(gameID, uuid) + "秒")
@@ -439,6 +457,9 @@ class BookMakerGameManager {
                                             }
                                             resetPlayerStatus(p)
                                             Bukkit.dispatchCommand(console, ("man10kit:mkit set " + p.name + " mb_" + gameID))
+                                            for (command in pl.config.getStringList("${gameID}.commands")){
+                                                Bukkit.dispatchCommand(console, command.replace("<player>",p.name))
+                                            }
                                             pl.freezedPlayer.add(fighter.key)
                                             i++
                                         }
@@ -580,7 +601,7 @@ class BookMakerGameManager {
             if (endingGame.status == GameStatus.FIGHT || uuidMap.keys.contains(endingGame.players.keys.toList()[0])) {
                 val winnerBetters = endingGame.players[winner]
                 val odds = getOdds(endingGame.players, winner, endingGame.tax, endingGame.prize)
-                val prize = getTotalPrice(endingGame.players) * endingGame.prize
+                val prize = getPrize(endingGame.players,endingGame.prize,endingGame.virtualBet.toDouble(),endingGame.joinFee,endingGame.playerNumber)
                 if (uuidMap.keys.contains(endingGame.players.keys.toList()[0])) {
                     Bukkit.broadcastMessage(pl.prefix +
                             "§6§l" + endingGame.gameName + " §f§l結果発表!" + "  §e§lオッズ: " + getOdds(endingGame.players, winner, endingGame.tax, endingGame.prize).roundTo2DecimalPlaces() + "倍")
@@ -660,6 +681,27 @@ class BookMakerGameManager {
         return totalPrice.roundTo2DecimalPlaces()
     }
 
+    fun getFighterBet(list: MutableMap<UUID, MutableList<Bet>>, fighterUUID: UUID): Double {
+        var total = 0.0
+        for (bet in list[fighterUUID]!!){
+            total += bet.price
+        }
+        return total
+    }
+
+    fun getPrize(list: MutableMap<UUID, MutableList<Bet>>, prize: Double, virtualBet: Double, joinFee: Double, playerNumber: Int): Double {
+        var total = getTotalPrice(list) * prize
+
+        for (bet in list){
+            val fighterBet = getFighterBet(list,bet.key) - virtualBet + joinFee * playerNumber.toDouble()
+            if (total > fighterBet){
+                total = fighterBet
+            }
+        }
+        return total.roundTo2DecimalPlaces()
+
+    }
+
     fun stopGame(gameID: String) {
         //強制終了
         val game = runningGames[gameID]!!
@@ -672,6 +714,7 @@ class BookMakerGameManager {
             }
             else -> {
                 for (fighter in game.players) {
+                    Bukkit.getPlayer(fighter.key)?.let { resetPlayerStatus(it) }
                     pl.vault.deposit(fighter.key,game.joinFee)
                     for (bet in fighter.value) {
                         if (Bukkit.getPlayer(bet.playerUUID) != null) {
@@ -685,6 +728,7 @@ class BookMakerGameManager {
                     val console = Bukkit.getServer().consoleSender
                     for (fighter in game.players.keys) {
                         val p = Bukkit.getPlayer(fighter)
+                        Bukkit.getPlayer(fighter)?.let { resetPlayerStatus(it) }
                         val command = "man10kit:mkit pop " + p?.name
                         Bukkit.dispatchCommand(console, command)
                         pl.lobbyLocation?.let { p?.teleport(it) }
@@ -782,7 +826,8 @@ class BookMakerGameManager {
                 mutableMapOf(s1UUID to mutableListOf(), s2UUID to mutableListOf()),
                 mutableListOf(),
                 0.0,
-                10000
+                10000,
+                mutableListOf()
         )
         runningGames[gameID] = openingGame
         Bukkit.broadcastMessage(pl.prefix + "§f§l質問§6§l「" + openingGame.gameName + "」")
@@ -795,7 +840,7 @@ class BookMakerGameManager {
         }
     }
 
-    fun Double.roundTo2DecimalPlaces() = BigDecimal(this).setScale(2, BigDecimal.ROUND_HALF_UP).toDouble()
+    fun Double.roundTo2DecimalPlaces() = BigDecimal(this).setScale(2, RoundingMode.HALF_UP).toDouble()
 
     fun resetPlayerStatus(p: Player) {
         p.fireTicks = 0
